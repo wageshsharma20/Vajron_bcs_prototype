@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -53,6 +53,14 @@ const customPaperTheme = {
   }
 };
 
+const navTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: '#F0F1F3', // Light gray background for web void
+  },
+};
+
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
@@ -79,9 +87,9 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ backgroundColor: '#F0F1F3' }}>
       <PaperProvider theme={customPaperTheme}>
-        <NavigationContainer>
+        <NavigationContainer theme={navTheme}>
           <Tab.Navigator
             tabBar={(props) => <CustomTabBar {...props} />}
             screenOptions={{ headerShown: false }}

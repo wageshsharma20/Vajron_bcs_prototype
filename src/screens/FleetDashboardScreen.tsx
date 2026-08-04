@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
@@ -46,9 +46,9 @@ export default function FleetDashboardScreen({ navigation }: any) {
 
         {/* Fleet Summary Row */}
         <View style={styles.summaryRow}>
-          <CircularScore score={85} label="Readiness" size={80} strokeWidth={8} color={theme.statusGreen} />
-          <CircularScore score={72} label="Avg Battery" size={80} strokeWidth={8} color={theme.statusGreen} />
-          <CircularScore score={95} label="Link Quality" size={80} strokeWidth={8} color={theme.statusGreen} />
+          <CircularScore score={85} label="Readiness" size={80} strokeWidth={8} />
+          <CircularScore score={72} label="Avg Battery" size={80} strokeWidth={8} />
+          <CircularScore score={95} label="Link Quality" size={80} strokeWidth={8} />
         </View>
 
         <View style={[styles.divider, { backgroundColor: theme.hairline }]} />
@@ -75,6 +75,15 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 0px 20px rgba(0,0,0,0.05)',
+        borderLeftWidth: StyleSheet.hairlineWidth,
+        borderRightWidth: StyleSheet.hairlineWidth,
+        borderColor: '#E2E4E9',
+      },
+    }),
   },
   header: {
     flexDirection: 'row',

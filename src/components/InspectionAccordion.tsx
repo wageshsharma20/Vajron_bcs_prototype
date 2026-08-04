@@ -40,7 +40,7 @@ const iconMap: Record<string, any> = {
 
 export default function InspectionAccordion({ data, index }: InspectionAccordionProps) {
   const { theme } = useTheme();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(index === 0);
   
   // Minimal enter animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -154,6 +154,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
+    paddingHorizontal: 20,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -181,6 +182,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingTop: 8,
     gap: 8,
+    paddingHorizontal: 20,
   },
   itemRow: {
     flexDirection: 'row',

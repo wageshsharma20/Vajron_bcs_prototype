@@ -28,8 +28,13 @@ export default function CircularScore({ score, size = 200, strokeWidth = 12, lab
   const progressLength = (score / 100) * arcLength;
   const targetDashoffset = arcLength - progressLength;
 
-  // Use passed color or fallback to a safe theme color
-  const color = propColor || theme.accentAmber || '#00ff00';
+  // Use passed color or conditional logic
+  let color = propColor;
+  if (!color) {
+    if (score >= 80) color = theme.statusGreen;
+    else if (score >= 50) color = theme.accentAmber;
+    else color = theme.accentRed;
+  }
   
   const height = size / 2 + strokeWidth;
 

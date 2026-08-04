@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
 import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pause, Play, DownloadCloud, AlertTriangle, MapPin } from 'lucide-react-native';
@@ -68,7 +68,7 @@ export default function MissionControlScreen({ route }: any) {
         />
       )}
 
-      {/* Command Strip */}
+      {/* Command Strip (Fixed at top) */}
       <View style={[styles.commandStrip, { borderBottomColor: theme.hairline }]}>
         <View style={styles.droneInfo}>
           <Text style={[styles.droneId, { color: theme.textPrimary }]}>{droneId}</Text>
@@ -78,38 +78,41 @@ export default function MissionControlScreen({ route }: any) {
         </View>
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted }]} onPress={handlePauseToggle}>
-            {isPaused ? <Play size={18} color={theme.accentAmber} /> : <Pause size={18} color={theme.accentAmber} />}
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted, borderRadius: 20, paddingHorizontal: 16 }]} onPress={handlePauseToggle}>
+            {isPaused ? <Play size={16} color={theme.accentAmber} /> : <Pause size={16} color={theme.accentAmber} />}
+            <Text style={[styles.actionBtnText, { color: theme.accentAmber, marginLeft: 6 }]}>{isPaused ? 'RESUME' : 'PAUSE'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed }]} onPress={handleRTL}>
-            <DownloadCloud size={18} color="#FFFFFF" />
-            <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 4 }]}>RTL</Text>
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, borderRadius: 20, paddingHorizontal: 16 }]} onPress={handleRTL}>
+            <DownloadCloud size={16} color="#FFFFFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>RTL</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Live Map */}
-      <View style={[styles.mapContainer, { backgroundColor: theme.surface, justifyContent: 'center', alignItems: 'center' }]}>
-        <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
-        <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Live Map */}
+        <View style={[styles.mapContainer, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline, justifyContent: 'center', alignItems: 'center' }]}>
+          <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
+          <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
+        </View>
 
-      {/* Telemetry Strip */}
-      <TelemetryHUD telemetry={telemetry} />
-      
-      {/* Progress */}
-      <MissionProgressBar totalWaypoints={20} currentWaypoint={Math.floor((flightPath.length / 200) * 20)} />
+        {/* Telemetry Strip */}
+        <TelemetryHUD telemetry={telemetry} />
+        
+        {/* Progress */}
+        <MissionProgressBar totalWaypoints={20} currentWaypoint={Math.floor((flightPath.length / 200) * 20)} />
 
-      {/* Video Feed */}
-      <VideoFeedPlayer telemetry={telemetry} />
+        {/* Video Feed */}
+        <VideoFeedPlayer telemetry={telemetry} />
 
-      {/* Gimbal Controls */}
-      <GimbalControlPad 
-        onPanTilt={(p, y) => telemetryService.sendGimbalCommand(droneId, { pitch: p, yaw: y })}
-        onZoom={(z) => telemetryService.sendGimbalCommand(droneId, { zoomLevel: z })}
-        onPhoto={() => telemetryService.sendGimbalCommand(droneId, { isPhotoMode: true })}
-        onRecordToggle={() => telemetryService.sendGimbalCommand(droneId, { isRecording: true })}
-      />
+        {/* Gimbal Controls */}
+        <GimbalControlPad 
+          onPanTilt={(p, y) => telemetryService.sendGimbalCommand(droneId, { pitch: p, yaw: y })}
+          onZoom={(z) => telemetryService.sendGimbalCommand(droneId, { zoomLevel: z })}
+          onPhoto={() => telemetryService.sendGimbalCommand(droneId, { isPhotoMode: true })}
+          onRecordToggle={() => telemetryService.sendGimbalCommand(droneId, { isRecording: true })}
+        />
+      </ScrollView>
     </View>
   );
 }
@@ -120,6 +123,18 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 0px 20px rgba(0,0,0,0.05)',
+        borderLeftWidth: StyleSheet.hairlineWidth,
+        borderRightWidth: StyleSheet.hairlineWidth,
+        borderColor: '#E2E4E9',
+      },
+    }),
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   commandStrip: {
     flexDirection: 'row',
@@ -160,8 +175,11 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
   },
   mapContainer: {
-    flex: 1, // Takes remaining space
-    minHeight: 150,
+    height: 180,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    margin: 16,
+    marginBottom: 0,
   },
   droneMarker: {
     width: 20,

@@ -43,12 +43,11 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
           <Text style={[styles.title, { color: theme.textPrimary }]}>{drone.id}</Text>
         </View>
         
-        {drone.status === 'in-flight' && (
-          <Animated.View style={[styles.badge, { backgroundColor: theme.statusGreen + '20' }, pulseStyle]}>
-            <Text style={[styles.badgeText, { color: theme.statusGreen }]}>IN FLIGHT</Text>
+        {drone.status === 'in-flight' ? (
+          <Animated.View style={[styles.badge, { backgroundColor: theme.surfaceMuted, borderLeftWidth: 2, borderLeftColor: theme.statusGreen }, pulseStyle]}>
+            <Text style={[styles.badgeText, { color: theme.textPrimary }]}>IN FLIGHT</Text>
           </Animated.View>
-        )}
-        {drone.status !== 'in-flight' && (
+        ) : (
           <View style={[styles.badge, { backgroundColor: theme.surfaceMuted }]}>
             <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{drone.status.toUpperCase()}</Text>
           </View>

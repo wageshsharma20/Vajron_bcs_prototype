@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
@@ -107,11 +107,9 @@ export default function MissionPlannerScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {waypoints.length > 0 && (
-          <View style={styles.checklistContainer}>
-            <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} />
-          </View>
-        )}
+        <View style={styles.checklistContainer}>
+          <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} isLaunchDisabled={waypoints.length === 0} />
+        </View>
       </View>
     </View>
   );
@@ -123,6 +121,15 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 0px 20px rgba(0,0,0,0.05)',
+        borderLeftWidth: StyleSheet.hairlineWidth,
+        borderRightWidth: StyleSheet.hairlineWidth,
+        borderColor: '#E2E4E9',
+      },
+    }),
   },
   header: {
     paddingHorizontal: 20,

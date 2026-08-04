@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
@@ -83,6 +83,18 @@ export default function FleetMaintenanceScreen() {
             items: mockServiceData.map((d, i) => ({ id: `srv-${i}`, name: d.label, value: d.value, status: 'good' }))
           }}
         />
+
+        <View style={[styles.supplementaryModule, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
+          <Text style={[styles.suppTitle, { color: theme.textSecondary }]}>SERVICE SCHEDULE</Text>
+          <View style={styles.suppRow}>
+            <Text style={[styles.suppLabel, { color: theme.textPrimary }]}>Next Required Service</Text>
+            <Text style={[styles.suppValue, { color: theme.textPrimary }]}>in 42 flight hours</Text>
+          </View>
+          <View style={[styles.suppRow, { marginTop: 8 }]}>
+            <Text style={[styles.suppLabel, { color: theme.textSecondary }]}>Firmware Version</Text>
+            <Text style={[styles.suppValue, { color: theme.textSecondary }]}>v2.4.1 (Up to date)</Text>
+          </View>
+        </View>
       </ScrollView>
 
       <View style={[styles.footer, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 16, borderTopColor: theme.hairline }]}>
@@ -100,6 +112,15 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 0px 20px rgba(0,0,0,0.05)',
+        borderLeftWidth: StyleSheet.hairlineWidth,
+        borderRightWidth: StyleSheet.hairlineWidth,
+        borderColor: '#E2E4E9',
+      },
+    }),
   },
   header: {
     paddingHorizontal: 20,
@@ -117,7 +138,7 @@ const styles = StyleSheet.create({
   },
   selectorRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     flexWrap: 'wrap',
   },
@@ -151,5 +172,31 @@ const styles = StyleSheet.create({
     fontFamily: typography.fonts.bold,
     fontSize: typography.sizes.base,
     letterSpacing: 1,
+  },
+  supplementaryModule: {
+    marginHorizontal: 20,
+    marginVertical: 16,
+    padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+  },
+  suppTitle: {
+    fontFamily: typography.fonts.semiBold,
+    fontSize: 10,
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  suppRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  suppLabel: {
+    fontFamily: typography.fonts.regular,
+    fontSize: typography.sizes.sm,
+  },
+  suppValue: {
+    fontFamily: typography.fonts.medium,
+    fontSize: typography.sizes.sm,
   }
 });

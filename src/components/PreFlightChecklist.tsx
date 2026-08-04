@@ -7,12 +7,14 @@ import { typography } from '../theme';
 interface PreFlightChecklistProps {
   checks: PreFlightCheck[];
   onLaunch: () => void;
+  isLaunchDisabled?: boolean;
 }
 
-export default function PreFlightChecklist({ checks, onLaunch }: PreFlightChecklistProps) {
+export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled: externalDisabled }: PreFlightChecklistProps) {
   const { theme } = useTheme();
 
-  const isLaunchDisabled = checks.some(c => c.blocker && (c.status === 'fail' || c.status === 'checking'));
+  const internalDisabled = checks.some(c => c.blocker && (c.status === 'fail' || c.status === 'checking'));
+  const isLaunchDisabled = externalDisabled || internalDisabled;
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -60,14 +60,13 @@ export const lightTheme: ColorTheme = {
   textSecondary: '#6C757D',
   hairline: '#E9ECEF',
   overlay: 'rgba(255, 255, 255, 0.85)',
-  
-  statusGreen: '#059669',
+  statusGreen: '#2D9B2B',
   statusGreenMuted: '#ECFDF5',
   
-  accentAmber: '#D97706',
+  accentAmber: '#FFA500',
   accentAmberMuted: '#FFFBEB',
   
-  accentRed: '#DC2626',
+  accentRed: '#E12C2C',
   accentRedMuted: '#FEF2F2',
 };
 

@@ -38,7 +38,7 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
     return (
       <View style={styles.container}>
       {/* Mock Map Background */}
-      <View style={[styles.mapPlaceholder, { backgroundColor: theme.surface }]}>
+      <View style={[styles.mapPlaceholder, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
         <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
         <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
       </View>
@@ -70,6 +70,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    marginVertical: 12,
   }
 });
 
