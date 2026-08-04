@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MapView, { Marker, Polyline } from 'react-native-maps';
 import { Pause, Play, DownloadCloud, AlertTriangle } from 'lucide-react-native';
 
 import { useTelemetry } from '../hooks/useTelemetry';
@@ -15,14 +14,6 @@ import GimbalControlPad from '../components/GimbalControlPad';
 import MissionProgressBar from '../components/MissionProgressBar';
 import NotificationBanner from '../components/NotificationBanner';
 import { DroneAlert, TelemetryFrame } from '../data/types';
-
-const silverMapStyle = [
-  { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
-  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#f5f5f5" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-];
 
 export default function MissionControlScreen({ route }: any) {
   const droneId = route.params?.droneId || 'DRONE-01'; // Fallback for direct tab click
