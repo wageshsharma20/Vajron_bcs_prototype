@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pause, Play, DownloadCloud, AlertTriangle } from 'lucide-react-native';
 
@@ -17,7 +17,7 @@ import { DroneAlert, TelemetryFrame } from '../data/types';
 
 export default function MissionControlScreen({ route }: any) {
   const droneId = route.params?.droneId || 'DRONE-01'; // Fallback for direct tab click
-  const theme = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   
   const telemetry = useTelemetry(droneId);
@@ -59,7 +59,7 @@ export default function MissionControlScreen({ route }: any) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       {alert && (
         <NotificationBanner 
           message={alert.message}
@@ -69,21 +69,21 @@ export default function MissionControlScreen({ route }: any) {
       )}
 
       {/* Command Strip */}
-      <View style={[styles.commandStrip, { borderBottomColor: theme.colors.border }]}>
+      <View style={[styles.commandStrip, { borderBottomColor: theme.hairline }]}>
         <View style={styles.droneInfo}>
-          <Text style={[styles.droneId, { color: theme.colors.textPrimary }]}>{droneId}</Text>
-          <Text style={[styles.droneStatus, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.droneId, { color: theme.textPrimary }]}>{droneId}</Text>
+          <Text style={[styles.droneStatus, { color: theme.textSecondary }]}>
             {telemetry?.flightMode?.toUpperCase() || 'UNKNOWN'} · {telemetry?.gpsFixType?.toUpperCase() || 'NO'} FIX
           </Text>
         </View>
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.surfaceLight }]} onPress={handlePauseToggle}>
-            {isPaused ? <Play size={18} color={theme.colors.accentAmber} /> : <Pause size={18} color={theme.colors.accentAmber} />}
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted }]} onPress={handlePauseToggle}>
+            {isPaused ? <Play size={18} color={theme.accentAmber} /> : <Pause size={18} color={theme.accentAmber} />}
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.accentRed }]} onPress={handleRTL}>
-            <DownloadCloud size={18} color="#FFF" />
-            <Text style={[styles.actionBtnText, { color: '#FFF', marginLeft: 4 }]}>RTL</Text>
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed }]} onPress={handleRTL}>
+            <DownloadCloud size={18} color="#FFFFFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 4 }]}>RTL</Text>
           </TouchableOpacity>
         </View>
       </View>

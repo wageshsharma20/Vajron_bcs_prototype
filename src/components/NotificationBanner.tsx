@@ -84,11 +84,8 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)', // subtle border instead of shadow
     zIndex: 9999,
   },
   iconContainer: {

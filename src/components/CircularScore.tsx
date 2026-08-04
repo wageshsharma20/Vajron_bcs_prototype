@@ -54,7 +54,7 @@ export default function CircularScore({ score, size = 200, strokeWidth = 12, lab
         <Svg width={size} height={height}>
           <Path
             d={arcPath}
-            stroke={theme.border}
+            stroke={theme.surfaceMuted}
             strokeWidth={strokeWidth}
             fill="transparent"
           />
@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
   scoreText: {
     fontFamily: typography.fonts.light, // Zen signature
     letterSpacing: -2,
+    fontVariant: typography.tabularNums,
   },
   label: {
     fontFamily: typography.fonts.medium,

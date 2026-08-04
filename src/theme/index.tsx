@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 
 export const typography = {
   fonts: {
@@ -17,36 +17,58 @@ export const typography = {
     xl: 26,
     xxl: 34,
   }
-} as any;
+} as const;
+
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+  huge: 48,
+} as const;
+
+export const layout = {
+  radius: 8,
+  radiusSm: 4,
+  hairline: 1, 
+} as const;
 
 export type ColorTheme = {
   background: string;
   surface: string;
-  surfaceLight: string;
+  surfaceMuted: string;
   textPrimary: string;
   textSecondary: string;
-  border: string;
+  hairline: string;
   overlay: string;
-  accentTeal: string;
-  accentAmber: string;
-  accentRed: string;
+  
   statusGreen: string;
+  statusGreenMuted: string;
+  accentAmber: string;
+  accentAmberMuted: string;
+  accentRed: string;
+  accentRedMuted: string;
 };
-
-
 
 export const lightTheme: ColorTheme = {
   background: '#FFFFFF',
   surface: '#F8F9FA',
-  surfaceLight: '#E9ECEF',
+  surfaceMuted: '#E9ECEF',
   textPrimary: '#000000',
   textSecondary: '#6C757D',
-  border: '#DEE2E6',
-  overlay: 'rgba(255, 255, 255, 0.8)',
-  accentTeal: '#F97316',
-  accentAmber: '#D97706', // amber-600 for better contrast on white
-  accentRed: '#DC2626',
+  hairline: '#E9ECEF',
+  overlay: 'rgba(255, 255, 255, 0.85)',
+  
   statusGreen: '#059669',
+  statusGreenMuted: '#ECFDF5',
+  
+  accentAmber: '#D97706',
+  accentAmberMuted: '#FFFBEB',
+  
+  accentRed: '#DC2626',
+  accentRedMuted: '#FEF2F2',
 };
 
 type ThemeContextType = {

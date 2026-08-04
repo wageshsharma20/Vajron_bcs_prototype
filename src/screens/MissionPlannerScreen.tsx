@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
 import MapWaypointEditor, { MapWaypointEditorRef } from '../components/MapWaypointEditor';
@@ -9,7 +9,7 @@ import { Waypoint, PreFlightCheck } from '../data/types';
 import { generateSurveyGrid } from '../data/missionUtils';
 
 export default function MissionPlannerScreen({ navigation }: any) {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapWaypointEditorRef>(null);
 
@@ -44,11 +44,11 @@ export default function MissionPlannerScreen({ navigation }: any) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-        <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>MISSION PLANNER</Text>
-        <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>Park: Sanjay Van  ·  DRONE-01</Text>
+      <View style={[styles.header, { borderBottomColor: theme.hairline }]}>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>MISSION PLANNER</Text>
+        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Park: Sanjay Van  ·  DRONE-01</Text>
       </View>
 
       <View style={styles.mapContainer}>
@@ -67,30 +67,30 @@ export default function MissionPlannerScreen({ navigation }: any) {
       </View>
 
       {/* Toolbar */}
-      <View style={[styles.toolbar, { backgroundColor: theme.colors.surface, paddingBottom: insets.bottom + 60 }]}>
+      <View style={[styles.toolbar, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 60, borderTopColor: theme.hairline }]}>
         <View style={styles.paramsRow}>
           <View style={styles.paramInputGroup}>
-            <Text style={[styles.paramLabel, { color: theme.colors.textSecondary }]}>ALT (m)</Text>
+            <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>ALT (m)</Text>
             <TextInput 
-              style={[styles.paramInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border }]}
+              style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
               value={altitude}
               onChangeText={setAltitude}
               keyboardType="numeric"
             />
           </View>
           <View style={styles.paramInputGroup}>
-            <Text style={[styles.paramLabel, { color: theme.colors.textSecondary }]}>SPD (m/s)</Text>
+            <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>SPD (m/s)</Text>
             <TextInput 
-              style={[styles.paramInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border }]}
+              style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
               value={speed}
               onChangeText={setSpeed}
               keyboardType="numeric"
             />
           </View>
           <View style={styles.paramInputGroup}>
-            <Text style={[styles.paramLabel, { color: theme.colors.textSecondary }]}>OVERLAP %</Text>
+            <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>OVERLAP %</Text>
             <TextInput 
-              style={[styles.paramInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border }]}
+              style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
               value={overlap}
               onChangeText={setOverlap}
               keyboardType="numeric"
@@ -99,18 +99,18 @@ export default function MissionPlannerScreen({ navigation }: any) {
         </View>
 
         <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.actionBtn, { borderColor: theme.colors.border }]} onPress={() => mapRef.current?.clearWaypoints()}>
-            <Text style={[styles.actionBtnText, { color: theme.colors.textPrimary }]}>CLEAR</Text>
+          <TouchableOpacity style={[styles.actionBtn, { borderColor: theme.hairline }]} onPress={() => mapRef.current?.clearWaypoints()}>
+            <Text style={[styles.actionBtnText, { color: theme.textPrimary }]}>CLEAR</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { borderColor: theme.colors.border }]} onPress={handleSurveyGrid}>
-            <Text style={[styles.actionBtnText, { color: theme.colors.textPrimary }]}>SURVEY GRID</Text>
+          <TouchableOpacity style={[styles.actionBtn, { borderColor: theme.hairline }]} onPress={handleSurveyGrid}>
+            <Text style={[styles.actionBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.actionBtn, { backgroundColor: theme.colors.accentAmber, borderColor: theme.colors.accentAmber }]}
+            style={[styles.actionBtn, { backgroundColor: theme.accentAmber, borderColor: theme.accentAmber }]}
             onPress={() => setShowChecklist(true)}
             disabled={waypoints.length === 0}
           >
-            <Text style={[styles.actionBtnText, { color: '#FFF' }]}>REVIEW & LAUNCH</Text>
+            <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>REVIEW & LAUNCH</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#DEE2E6',
   },
   paramsRow: {
     flexDirection: 'row',
@@ -175,6 +174,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: typography.fonts.medium,
     fontSize: typography.sizes.sm,
+    fontVariant: typography.tabularNums,
   },
   actionRow: {
     flexDirection: 'row',

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 
 interface MissionProgressBarProps {
   totalWaypoints: number;
@@ -8,13 +8,13 @@ interface MissionProgressBarProps {
 }
 
 export default function MissionProgressBar({ totalWaypoints, currentWaypoint }: MissionProgressBarProps) {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const progress = totalWaypoints > 0 ? Math.min(1, currentWaypoint / totalWaypoints) : 0;
 
   return (
     <View style={styles.container}>
-      <View style={[styles.track, { backgroundColor: theme.colors.surfaceLight }]}>
-        <View style={[styles.fill, { backgroundColor: theme.colors.accentAmber, width: `${progress * 100}%` }]} />
+      <View style={[styles.track, { backgroundColor: theme.surfaceMuted }]}>
+        <View style={[styles.fill, { backgroundColor: theme.statusGreen, width: `${progress * 100}%` }]} />
       </View>
     </View>
   );

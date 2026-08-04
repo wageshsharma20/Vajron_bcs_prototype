@@ -1,6 +1,6 @@
 import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 import { Waypoint } from '../data/types';
 import { typography } from '../theme';
 
@@ -18,7 +18,7 @@ export interface MapWaypointEditorRef {
 
 const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProps>(
   ({ waypoints, onWaypointsChange, defaultAltitude = 30 }, ref) => {
-    const theme = useTheme();
+    const { theme } = useTheme();
 
     useImperativeHandle(ref, () => ({
       addWaypoint: (lat: number, lng: number) => {

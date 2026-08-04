@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 import { Camera, Video } from 'lucide-react-native';
 import { typography } from '../theme';
 
@@ -33,7 +33,7 @@ const MockJoystick = ({ color, radius }: { color: string, radius: number }) => (
 );
 
 export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordToggle }: GimbalControlPadProps) {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const [isRecording, setIsRecording] = useState(false);
   const [zoom, setZoom] = useState(1);
 
@@ -60,31 +60,31 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+    <View style={[styles.container, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
       <View style={styles.joystickContainer}>
         <MockJoystick
-          color={theme.colors.accentAmber}
+          color={theme.accentAmber}
           radius={50}
         />
       </View>
 
       <View style={styles.controlsContainer}>
         <View style={styles.zoomRow}>
-          <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.colors.border }]} onPress={() => adjustZoom(-1)}>
-            <Text style={[styles.zoomBtnText, { color: theme.colors.textPrimary }]}>-</Text>
+          <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.border }]} onPress={() => adjustZoom(-1)}>
+            <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>-</Text>
           </TouchableOpacity>
-          <Text style={[styles.zoomText, { color: theme.colors.textPrimary }]}>{zoom}x</Text>
-          <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.colors.border }]} onPress={() => adjustZoom(1)}>
-            <Text style={[styles.zoomBtnText, { color: theme.colors.textPrimary }]}>+</Text>
+          <Text style={[styles.zoomText, { color: theme.textPrimary }]}>{zoom}x</Text>
+          <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.border }]} onPress={() => adjustZoom(1)}>
+            <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>+</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.surfaceLight }]} onPress={onPhoto}>
-            <Camera size={20} color={theme.colors.textPrimary} />
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceLight }]} onPress={onPhoto}>
+            <Camera size={20} color={theme.textPrimary} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isRecording ? theme.colors.accentRed : theme.colors.surfaceLight }]} onPress={handleRecord}>
-            <Video size={20} color={isRecording ? '#FFF' : theme.colors.textPrimary} />
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isRecording ? theme.accentRed : theme.surfaceLight }]} onPress={handleRecord}>
+            <Video size={20} color={isRecording ? '#FFF' : theme.textPrimary} />
           </TouchableOpacity>
         </View>
       </View>

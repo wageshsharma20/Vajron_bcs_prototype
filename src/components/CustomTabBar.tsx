@@ -2,15 +2,15 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Grid, MapPin, Radio, Wrench } from 'lucide-react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border, paddingBottom: insets.bottom + 8 }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, borderTopColor: theme.hairline, paddingBottom: insets.bottom + 8 }]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
@@ -43,7 +43,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
           label = 'Service';
         }
 
-        const color = isFocused ? theme.colors.accentAmber : theme.colors.textSecondary;
+        const color = isFocused ? theme.accentAmber : theme.textSecondary;
 
         return (
           <TouchableOpacity
@@ -57,7 +57,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
             <View style={styles.iconContainer}>
               <IconComponent size={24} color={color} strokeWidth={isFocused ? 2.5 : 2} />
               {route.name === 'MissionControl' && (
-                <View style={[styles.activeDot, { backgroundColor: theme.colors.accentAmber }]} />
+                <View style={[styles.activeDot, { backgroundColor: theme.accentAmber }]} />
               )}
             </View>
             <Text style={[styles.label, { color, fontFamily: isFocused ? 'Inter_600SemiBold' : 'Inter_500Medium' }]}>

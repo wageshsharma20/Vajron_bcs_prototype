@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 import { TelemetryFrame } from '../data/types';
 import { typography } from '../theme';
 
@@ -9,7 +9,7 @@ interface VideoFeedPlayerProps {
 }
 
 export default function VideoFeedPlayer({ telemetry }: VideoFeedPlayerProps) {
-  const theme = useTheme();
+  const { theme } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: '#1A1A1A' }]}>

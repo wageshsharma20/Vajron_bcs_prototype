@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
 import DroneStatusCard from '../components/DroneStatusCard';
@@ -9,7 +9,7 @@ import { mockDrones, initialTelemetry } from '../data/mockFleetData';
 import { DroneAsset } from '../data/types';
 
 export default function FleetDashboardScreen({ navigation }: any) {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
   const handleDronePress = (drone: DroneAsset) => {
@@ -25,11 +25,11 @@ export default function FleetDashboardScreen({ navigation }: any) {
   const chargingCount = mockDrones.filter(d => d.status === 'charging').length;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>FLEET OVERVIEW</Text>
-        <Text style={[styles.headerDate, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>FLEET OVERVIEW</Text>
+        <Text style={[styles.headerDate, { color: theme.textSecondary }]}>
           {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
         </Text>
       </View>
@@ -37,21 +37,21 @@ export default function FleetDashboardScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Status Strip */}
         <View style={styles.statusStrip}>
-          <Text style={[styles.statusText, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.statusText, { color: theme.textSecondary }]}>
             {idleCount} IDLE  ·  
-            <Text style={{ color: inFlightCount > 0 ? theme.colors.accentAmber : theme.colors.textSecondary }}> {inFlightCount} IN FLIGHT </Text>
+            <Text style={{ color: inFlightCount > 0 ? theme.accentAmber : theme.textSecondary }}> {inFlightCount} IN FLIGHT </Text>
             ·  {chargingCount} CHARGING
           </Text>
         </View>
 
         {/* Fleet Summary Row */}
         <View style={styles.summaryRow}>
-          <CircularScore score={85} label="Readiness" size={80} strokeWidth={8} color={theme.colors.statusGreen} />
-          <CircularScore score={72} label="Avg Battery" size={80} strokeWidth={8} color={theme.colors.statusGreen} />
-          <CircularScore score={95} label="Link Quality" size={80} strokeWidth={8} color={theme.colors.statusGreen} />
+          <CircularScore score={85} label="Readiness" size={80} strokeWidth={8} color={theme.statusGreen} />
+          <CircularScore score={72} label="Avg Battery" size={80} strokeWidth={8} color={theme.statusGreen} />
+          <CircularScore score={95} label="Link Quality" size={80} strokeWidth={8} color={theme.statusGreen} />
         </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.hairline }]} />
 
         {/* Drone List */}
         <View style={styles.listContainer}>

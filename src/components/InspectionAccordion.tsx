@@ -97,7 +97,7 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
   });
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim, borderBottomColor: theme.border }]}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim, borderBottomColor: theme.hairline }]}>
       <Pressable onPress={toggleExpand} style={styles.header}>
         <View style={styles.headerLeft}>
           <IconComponent size={16} color={theme.textPrimary} strokeWidth={1.5} />

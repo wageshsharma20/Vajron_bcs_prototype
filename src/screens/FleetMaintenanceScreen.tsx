@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
 import InspectionAccordion from '../components/InspectionAccordion';
 import { mockDrones } from '../data/mockFleetData';
 
 export default function FleetMaintenanceScreen() {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [selectedDrone, setSelectedDrone] = useState(mockDrones[0]);
 
@@ -31,9 +31,9 @@ export default function FleetMaintenanceScreen() {
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-        <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>FLEET MAINTENANCE</Text>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+      <View style={[styles.header, { borderBottomColor: theme.hairline }]}>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>FLEET MAINTENANCE</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -45,15 +45,15 @@ export default function FleetMaintenanceScreen() {
               style={[
                 styles.selectorBtn, 
                 { 
-                  backgroundColor: selectedDrone.id === drone.id ? theme.colors.textPrimary : theme.colors.surface,
-                  borderColor: theme.colors.border 
+                  backgroundColor: selectedDrone.id === drone.id ? theme.textPrimary : theme.surface,
+                  borderColor: theme.hairline 
                 }
               ]}
               onPress={() => setSelectedDrone(drone)}
             >
               <Text style={[
                 styles.selectorText, 
-                { color: selectedDrone.id === drone.id ? theme.colors.background : theme.colors.textPrimary }
+                { color: selectedDrone.id === drone.id ? theme.background : theme.textPrimary }
               ]}>{drone.id}</Text>
             </TouchableOpacity>
           ))}
@@ -85,9 +85,9 @@ export default function FleetMaintenanceScreen() {
         />
       </ScrollView>
 
-      <View style={[styles.footer, { backgroundColor: theme.colors.surface, paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.colors.textPrimary }]}>
-          <Text style={[styles.actionBtnText, { color: theme.colors.background }]}>SCHEDULE SERVICE</Text>
+      <View style={[styles.footer, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 16, borderTopColor: theme.hairline }]}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.textPrimary }]}>
+          <Text style={[styles.actionBtnText, { color: theme.background }]}>SCHEDULE SERVICE</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -137,7 +137,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#DEE2E6',
   },
   actionBtn: {
     paddingVertical: 16,
