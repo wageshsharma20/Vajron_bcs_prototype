@@ -25,9 +25,9 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
 
   const getStatusColor = () => {
     switch (drone.status) {
-      case 'in-flight': return theme.accentAmber;
-      case 'idle': return theme.statusGreen;
-      case 'charging': return theme.statusGreen;
+      case 'in-flight': return theme.statusGreen;
+      case 'idle': return theme.textSecondary;
+      case 'charging': return theme.accentAmber;
       case 'maintenance': return theme.accentRed;
       case 'offline': default: return theme.textSecondary;
     }
@@ -44,8 +44,8 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
         </View>
         
         {drone.status === 'in-flight' && (
-          <Animated.View style={[styles.badge, { backgroundColor: theme.accentAmberMuted }, pulseStyle]}>
-            <Text style={[styles.badgeText, { color: theme.accentAmber }]}>IN FLIGHT</Text>
+          <Animated.View style={[styles.badge, { backgroundColor: theme.statusGreen + '20' }, pulseStyle]}>
+            <Text style={[styles.badgeText, { color: theme.statusGreen }]}>IN FLIGHT</Text>
           </Animated.View>
         )}
         {drone.status !== 'in-flight' && (

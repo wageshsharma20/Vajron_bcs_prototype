@@ -52,7 +52,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
             accessibilityLabel={options.tabBarAccessibilityLabel}
             testID={options.tabBarTestID}
             onPress={onPress}
-            style={styles.tabButton}
+            style={[styles.tabButton, { outlineStyle: 'none' } as any]}
           >
             <View style={styles.iconContainer}>
               <IconComponent size={24} color={color} strokeWidth={isFocused ? 2.5 : 2} />

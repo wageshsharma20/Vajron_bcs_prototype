@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pause, Play, DownloadCloud, AlertTriangle } from 'lucide-react-native';
+import { Pause, Play, DownloadCloud, AlertTriangle, MapPin } from 'lucide-react-native';
 
 import { useTelemetry } from '../hooks/useTelemetry';
 import { typography } from '../theme';
@@ -89,9 +89,9 @@ export default function MissionControlScreen({ route }: any) {
       </View>
 
       {/* Live Map */}
-      <View style={[styles.mapContainer, { backgroundColor: '#f5f5f5', justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ fontFamily: typography.fonts.medium, color: '#666' }}>[Google Maps API Key Missing]</Text>
-        <Text style={{ fontFamily: typography.fonts.regular, color: '#999', marginTop: 4, fontSize: 12 }}>Map rendering is bypassed in this prototype build to prevent crashes.</Text>
+      <View style={[styles.mapContainer, { backgroundColor: theme.surface, justifyContent: 'center', alignItems: 'center' }]}>
+        <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
+        <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
       </View>
 
       {/* Telemetry Strip */}
@@ -117,6 +117,9 @@ export default function MissionControlScreen({ route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   commandStrip: {
     flexDirection: 'row',
@@ -130,9 +133,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   droneId: {
-    fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.base,
-    letterSpacing: -0.3,
+    fontFamily: typography.fonts.light,
+    fontSize: 22,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   droneStatus: {
     fontFamily: typography.fonts.medium,

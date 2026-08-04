@@ -97,6 +97,9 @@ export default function FleetMaintenanceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     paddingHorizontal: 20,
@@ -104,9 +107,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: {
-    fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.md,
-    letterSpacing: -0.3,
+    fontFamily: typography.fonts.light,
+    fontSize: 22,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   scrollContent: {
     paddingBottom: 80,

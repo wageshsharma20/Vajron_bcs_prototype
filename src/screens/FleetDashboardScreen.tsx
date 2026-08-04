@@ -72,6 +72,9 @@ export default function FleetDashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -81,9 +84,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   headerTitle: {
-    fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.lg,
-    letterSpacing: -0.5,
+    fontFamily: typography.fonts.light,
+    fontSize: 22,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   headerDate: {
     fontFamily: typography.fonts.semiBold,

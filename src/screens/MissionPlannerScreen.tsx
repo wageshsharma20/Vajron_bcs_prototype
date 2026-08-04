@@ -98,21 +98,20 @@ export default function MissionPlannerScreen({ navigation }: any) {
           </View>
         </View>
 
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.actionBtn, { borderColor: theme.hairline }]} onPress={() => mapRef.current?.clearWaypoints()}>
-            <Text style={[styles.actionBtnText, { color: theme.textPrimary }]}>CLEAR</Text>
+        <View style={styles.actionRowSecondary}>
+          <TouchableOpacity onPress={() => mapRef.current?.clearWaypoints()} style={styles.textLinkBtn}>
+            <Text style={[styles.textLink, { color: theme.textSecondary }]}>Clear Map</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { borderColor: theme.hairline }]} onPress={handleSurveyGrid}>
-            <Text style={[styles.actionBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionBtn, { backgroundColor: theme.accentAmber, borderColor: theme.accentAmber }]}
-            onPress={() => setShowChecklist(true)}
-            disabled={waypoints.length === 0}
-          >
-            <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>REVIEW & LAUNCH</Text>
+          <TouchableOpacity style={[styles.secondaryBtn, { borderColor: theme.hairline }]} onPress={handleSurveyGrid}>
+            <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
           </TouchableOpacity>
         </View>
+
+        {waypoints.length > 0 && (
+          <View style={styles.checklistContainer}>
+            <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} />
+          </View>
+        )}
       </View>
     </View>
   );
@@ -121,6 +120,9 @@ export default function MissionPlannerScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     paddingHorizontal: 20,
@@ -128,9 +130,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: {
-    fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.md,
-    letterSpacing: -0.3,
+    fontFamily: typography.fonts.light,
+    fontSize: 22,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   headerSubtitle: {
     fontFamily: typography.fonts.medium,
@@ -176,20 +179,34 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     fontVariant: typography.tabularNums,
   },
-  actionRow: {
+  actionRowSecondary: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  actionBtn: {
-    flex: 1,
-    marginHorizontal: 4,
-    paddingVertical: 12,
+  textLinkBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  textLink: {
+    fontFamily: typography.fonts.medium,
+    fontSize: typography.sizes.sm,
+    textDecorationLine: 'underline',
+  },
+  secondaryBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
   },
-  actionBtnText: {
+  secondaryBtnText: {
     fontFamily: typography.fonts.bold,
     fontSize: typography.sizes.xs,
+    letterSpacing: 0.5,
+  },
+  checklistContainer: {
+    marginTop: 8,
   }
 });

@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useTheme } from '../theme';
 import { Waypoint } from '../data/types';
 import { typography } from '../theme';
+import { MapPin } from 'lucide-react-native';
 
 interface MapWaypointEditorProps {
   waypoints: Waypoint[];
@@ -35,9 +36,12 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
     }));
 
     return (
-      <View style={[styles.container, { backgroundColor: '#f5f5f5', justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ fontFamily: typography.fonts.medium, color: '#666' }}>[Google Maps API Key Missing]</Text>
-        <Text style={{ fontFamily: typography.fonts.regular, color: '#999', marginTop: 4, fontSize: 12 }}>Map rendering is bypassed in this prototype build to prevent crashes.</Text>
+      <View style={styles.container}>
+      {/* Mock Map Background */}
+      <View style={[styles.mapPlaceholder, { backgroundColor: theme.surface }]}>
+        <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
+        <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
+      </View>
       </View>
     );
   }
@@ -61,6 +65,11 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontFamily: typography.fonts.bold,
     fontSize: 10,
+  },
+  mapPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   }
 });
 

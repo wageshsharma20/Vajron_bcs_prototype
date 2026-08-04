@@ -34,10 +34,9 @@ export default function PreFlightChecklist({ checks, onLaunch }: PreFlightCheckl
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.textPrimary }]}>Pre-Flight Checklist</Text>
+    <View style={styles.container}>
       
-      <ScrollView style={styles.list}>
+      <View style={styles.list}>
         {checks.map(check => (
           <View key={check.id} style={[styles.checkRow, { borderBottomColor: theme.hairline }]}>
             <View style={styles.statusBadgeContainer}>
@@ -49,7 +48,7 @@ export default function PreFlightChecklist({ checks, onLaunch }: PreFlightCheckl
             <Text style={[styles.checkValue, { color: theme.textSecondary }]}>{check.value}</Text>
           </View>
         ))}
-      </ScrollView>
+      </View>
 
       <TouchableOpacity 
         style={[
@@ -72,15 +71,7 @@ export default function PreFlightChecklist({ checks, onLaunch }: PreFlightCheckl
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: 400,
-  },
-  title: {
-    fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.md,
-    marginBottom: 16,
+    paddingTop: 8,
   },
   list: {
     marginBottom: 20,

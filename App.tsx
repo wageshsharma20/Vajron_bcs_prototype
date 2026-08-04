@@ -7,6 +7,7 @@ import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
 import {
+  Inter_300Light,
   Inter_400Regular,
   Inter_500Medium,
   Inter_600SemiBold,
@@ -58,6 +59,7 @@ export default function App() {
   useEffect(() => {
     async function loadFonts() {
       await Font.loadAsync({
+        Inter_300Light,
         Inter_400Regular,
         Inter_500Medium,
         Inter_600SemiBold,

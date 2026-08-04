@@ -60,32 +60,35 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-      <View style={styles.joystickContainer}>
-        <MockJoystick
-          color={theme.accentAmber}
-          radius={50}
-        />
-      </View>
-
-      <View style={styles.controlsContainer}>
-        <View style={styles.zoomRow}>
-          <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.border }]} onPress={() => adjustZoom(-1)}>
-            <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>-</Text>
-          </TouchableOpacity>
-          <Text style={[styles.zoomText, { color: theme.textPrimary }]}>{zoom}x</Text>
-          <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.border }]} onPress={() => adjustZoom(1)}>
-            <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>+</Text>
-          </TouchableOpacity>
+    <View style={styles.outerContainer}>
+      <Text style={[styles.panelTitle, { color: theme.textSecondary }]}>GIMBAL & CAMERA</Text>
+      <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.hairline }]}>
+        <View style={styles.joystickContainer}>
+          <MockJoystick
+            color={theme.accentAmber}
+            radius={40}
+          />
         </View>
 
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceLight }]} onPress={onPhoto}>
-            <Camera size={20} color={theme.textPrimary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isRecording ? theme.accentRed : theme.surfaceLight }]} onPress={handleRecord}>
-            <Video size={20} color={isRecording ? '#FFF' : theme.textPrimary} />
-          </TouchableOpacity>
+        <View style={styles.controlsContainer}>
+          <View style={styles.zoomRow}>
+            <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.hairline }]} onPress={() => adjustZoom(-1)}>
+              <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>-</Text>
+            </TouchableOpacity>
+            <Text style={[styles.zoomText, { color: theme.textPrimary }]}>{zoom}x</Text>
+            <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.hairline }]} onPress={() => adjustZoom(1)}>
+              <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceLight }]} onPress={onPhoto}>
+              <Camera size={20} color={theme.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isRecording ? theme.accentRed : theme.surfaceLight }]} onPress={handleRecord}>
+              <Video size={20} color={isRecording ? '#FFF' : theme.textPrimary} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
@@ -93,39 +96,49 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    padding: 16,
+  },
+  panelTitle: {
+    fontFamily: typography.fonts.semiBold,
+    fontSize: 10,
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
   container: {
     flexDirection: 'row',
-    padding: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    padding: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   joystickContainer: {
-    width: 120,
+    width: 100,
     alignItems: 'center',
   },
   controlsContainer: {
     flex: 1,
-    paddingLeft: 24,
+    paddingLeft: 16,
     justifyContent: 'space-between',
   },
   zoomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   zoomBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   zoomBtnText: {
     fontFamily: typography.fonts.regular,
-    fontSize: 20,
+    fontSize: 18,
     marginTop: -2,
   },
   zoomText: {
@@ -138,7 +151,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    height: 44,
+    height: 40,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
