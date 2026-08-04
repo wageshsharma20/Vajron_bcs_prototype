@@ -3,10 +3,23 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@react-navigation/bottom-tabs": "^7.18.14",
+    "@react-navigation/native": "^7.3.14",
     "expo": "~57.0.9",
+    "expo-font": "^57.0.1",
     "expo-status-bar": "~57.0.1",
+    "lucide-react-native": "^1.28.0",
     "react": "19.2.3",
-    "react-native": "0.86.2"
+    "react-native": "0.86.2",
+    "react-native-gesture-handler": "^3.1.0",
+    "react-native-joystick": "^1.0.4",
+    "react-native-maps": "^1.29.0",
+    "react-native-paper": "^5.15.3",
+    "react-native-reanimated": "^4.5.3",
+    "react-native-safe-area-context": "^5.8.1",
+    "react-native-screens": "^4.26.2",
+    "react-native-svg": "^15.15.5"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
