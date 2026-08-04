@@ -38,7 +38,7 @@ const iconMap: Record<string, any> = {
   Trees, Leaf, Droplets, Sparkles, Wrench, ShieldCheck, Waves, Palette,
 };
 
-export const InspectionAccordion: React.FC<InspectionAccordionProps> = ({ data, index }) => {
+export default function InspectionAccordion({ data, index }: InspectionAccordionProps) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
   

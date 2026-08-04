@@ -19,13 +19,13 @@ interface NotificationBannerProps {
   onDismiss?: () => void;
 }
 
-export const NotificationBanner: React.FC<NotificationBannerProps> = ({ 
-  title, 
+export default function NotificationBanner({ 
+  title = 'Notification', 
   message, 
   type = 'warning',
   durationMs = 5000,
   onDismiss
-}) => {
+}: NotificationBannerProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-150);

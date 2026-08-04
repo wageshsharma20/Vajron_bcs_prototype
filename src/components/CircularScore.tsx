@@ -12,9 +12,10 @@ type CircularScoreProps = {
   size?: number;
   strokeWidth?: number;
   label?: string;
+  color?: string;
 };
 
-export const CircularScore = ({ score, size = 200, strokeWidth = 12, label }: CircularScoreProps) => {
+export default function CircularScore({ score, size = 200, strokeWidth = 12, label, color: propColor }: CircularScoreProps) {
   const { theme } = useTheme();
   
   const radius = (size - strokeWidth) / 2;
@@ -27,8 +28,8 @@ export const CircularScore = ({ score, size = 200, strokeWidth = 12, label }: Ci
   const progressLength = (score / 100) * arcLength;
   const targetDashoffset = arcLength - progressLength;
 
-  // Zen: single accent color
-  const color = theme.accentTeal;
+  // Use passed color or fallback to a safe theme color
+  const color = propColor || theme.accentAmber || '#00ff00';
   
   const height = size / 2 + strokeWidth;
 

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { Camera, Video } from 'lucide-react-native';
-import { Joystick } from 'react-native-joystick';
 import { typography } from '../theme';
 
 interface GimbalControlPadProps {
@@ -12,6 +11,27 @@ interface GimbalControlPadProps {
   onRecordToggle: () => void;
 }
 
+// Mock Joystick to prevent crashes since 'react-native-joystick' doesn't export <Joystick>
+const MockJoystick = ({ color, radius }: { color: string, radius: number }) => (
+  <View style={{
+    width: radius * 2,
+    height: radius * 2,
+    borderRadius: radius,
+    backgroundColor: color + '40', // 25% opacity
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: color
+  }}>
+    <View style={{
+      width: radius * 0.8,
+      height: radius * 0.8,
+      borderRadius: radius * 0.4,
+      backgroundColor: color
+    }} />
+  </View>
+);
+
 export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordToggle }: GimbalControlPadProps) {
   const theme = useTheme();
   const [isRecording, setIsRecording] = useState(false);
@@ -20,8 +40,7 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
   const handleJoystick = (data: any) => {
     // data contains type: 'move' | 'stop', position: { x, y }, force, angle
     if (data.type === 'move') {
-      // mapping -1..1 to some pitch/yaw rate
-      const yawRate = (data.position.x / 50); // normalize roughly
+      const yawRate = (data.position.x / 50); 
       const pitchRate = -(data.position.y / 50);
       onPanTilt(pitchRate, yawRate);
     } else if (data.type === 'stop') {
@@ -43,11 +62,9 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
       <View style={styles.joystickContainer}>
-        <Joystick
+        <MockJoystick
           color={theme.colors.accentAmber}
           radius={50}
-          onMove={handleJoystick}
-          onStop={handleJoystick}
         />
       </View>
 

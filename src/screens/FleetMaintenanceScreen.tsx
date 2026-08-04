@@ -60,19 +60,28 @@ export default function FleetMaintenanceScreen() {
         </View>
 
         <InspectionAccordion 
-          title="Hardware & Firmware" 
-          items={mockHardwareData} 
-          defaultExpanded={true} 
+          index={0}
+          data={{
+            category: "Hardware & Firmware",
+            iconName: "Wrench",
+            items: mockHardwareData.map((d, i) => ({ id: `hw-${i}`, name: d.label, value: d.value, status: 'good' }))
+          }}
         />
         <InspectionAccordion 
-          title="Battery Health" 
-          items={mockBatteryData} 
-          defaultExpanded={true} 
+          index={1}
+          data={{
+            category: "Battery Health",
+            iconName: "Sparkles",
+            items: mockBatteryData.map((d, i) => ({ id: `bat-${i}`, name: d.label, value: d.value, status: d.label === 'Degradation' ? 'attention' : 'good' }))
+          }}
         />
         <InspectionAccordion 
-          title="Service History" 
-          items={mockServiceData} 
-          defaultExpanded={false} 
+          index={2}
+          data={{
+            category: "Service History",
+            iconName: "ShieldCheck",
+            items: mockServiceData.map((d, i) => ({ id: `srv-${i}`, name: d.label, value: d.value, status: 'good' }))
+          }}
         />
       </ScrollView>
 
