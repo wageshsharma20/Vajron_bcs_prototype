@@ -5,9 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { Pause, Play, DownloadCloud, AlertTriangle } from 'lucide-react-native';
 
-import { typography } from '../theme';
 import { useTelemetry } from '../hooks/useTelemetry';
+import { typography } from '../theme';
 import { telemetryService } from '../services/telemetryService';
+import { useTelemetryStore } from '../data/useTelemetryStore';
 import TelemetryHUD from '../components/TelemetryHUD';
 import VideoFeedPlayer from '../components/VideoFeedPlayer';
 import GimbalControlPad from '../components/GimbalControlPad';
@@ -29,6 +30,8 @@ export default function MissionControlScreen({ route }: any) {
   const insets = useSafeAreaInsets();
   
   const telemetry = useTelemetry(droneId);
+  const updateGimbal = useTelemetryStore(state => state.updateGimbal);
+
   const [flightPath, setFlightPath] = useState<{ latitude: number, longitude: number }[]>([]);
   const [alert, setAlert] = useState<DroneAlert | null>(null);
   const [isPaused, setIsPaused] = useState(false);
@@ -95,42 +98,9 @@ export default function MissionControlScreen({ route }: any) {
       </View>
 
       {/* Live Map */}
-      <View style={styles.mapContainer}>
-        <MapView
-          style={StyleSheet.absoluteFillObject}
-          customMapStyle={silverMapStyle}
-          initialRegion={{
-            latitude: 28.535517,
-            longitude: 77.191632,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          region={telemetry ? {
-            latitude: telemetry.lat,
-            longitude: telemetry.lng,
-            latitudeDelta: 0.005,
-            longitudeDelta: 0.005,
-          } : undefined}
-        >
-          {flightPath.length > 0 && (
-            <Polyline
-              coordinates={flightPath}
-              strokeColor={theme.colors.accentAmber}
-              strokeWidth={3}
-            />
-          )}
-          {telemetry && (
-            <Marker
-              coordinate={{ latitude: telemetry.lat, longitude: telemetry.lng }}
-              rotation={telemetry.heading}
-              anchor={{ x: 0.5, y: 0.5 }}
-            >
-              <View style={styles.droneMarker}>
-                <View style={[styles.droneArrow, { borderBottomColor: theme.colors.textPrimary }]} />
-              </View>
-            </Marker>
-          )}
-        </MapView>
+      <View style={[styles.mapContainer, { backgroundColor: '#f5f5f5', justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ fontFamily: typography.fonts.medium, color: '#666' }}>[Google Maps API Key Missing]</Text>
+        <Text style={{ fontFamily: typography.fonts.regular, color: '#999', marginTop: 4, fontSize: 12 }}>Map rendering is bypassed in this prototype build to prevent crashes.</Text>
       </View>
 
       {/* Telemetry Strip */}
