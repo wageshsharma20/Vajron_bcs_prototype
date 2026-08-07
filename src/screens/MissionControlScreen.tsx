@@ -218,6 +218,7 @@ const styles = StyleSheet.create({
   },
   videoFeedWrapper: {
     flex: 1,
+    minHeight: 160,
     marginVertical: 12,
   },
   bottomRow: {
@@ -225,6 +226,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 16,
+    alignItems: 'stretch',
   },
   telemetryContainer: {
     flex: 1,
@@ -234,7 +236,6 @@ const styles = StyleSheet.create({
   mapContainerSquare: {
     flex: 1,
     marginLeft: 8,
-    aspectRatio: 1,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
     justifyContent: 'center',
