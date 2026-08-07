@@ -52,6 +52,10 @@ export default function TelemetryHUD({ telemetry, isGrid = false }: TelemetryHUD
           <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>DIST</Text>
           <AnimatedNumber value={Math.round(telemetry.distanceToHome)} suffix="m" isGrid={isGrid} />
         </View>
+        <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
+          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>SATS</Text>
+          <AnimatedNumber value={telemetry.gpsSatsVisible} suffix="" isGrid={isGrid} />
+        </View>
       </View>
     </View>
   );
