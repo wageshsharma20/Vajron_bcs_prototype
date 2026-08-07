@@ -11,14 +11,14 @@ interface TelemetryHUDProps {
 }
 
 // Helper component for animating individual numeric values without re-rendering the whole HUD
-function AnimatedNumber({ value, suffix }: { value: string | number, suffix: string }) {
+function AnimatedNumber({ value, suffix, isGrid }: { value: string | number, suffix: string, isGrid?: boolean }) {
   const { theme } = useTheme();
   
   return (
     <View style={styles.metricCell}>
       <View style={styles.valueRow}>
-        <Text style={[styles.valueText, { color: theme.textPrimary }]}>{value}</Text>
-        <Text style={[styles.suffixText, { color: theme.textSecondary }]}>{suffix}</Text>
+        <Text style={[styles.valueText, isGrid && styles.gridValueText, { color: theme.textPrimary }]}>{value}</Text>
+        <Text style={[styles.suffixText, isGrid && styles.gridSuffixText, { color: theme.textSecondary }]}>{suffix}</Text>
       </View>
     </View>
   );
@@ -33,24 +33,24 @@ export default function TelemetryHUD({ telemetry, isGrid = false }: TelemetryHUD
     <View style={[styles.container, isGrid && styles.gridContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
       <View style={[styles.row, isGrid && styles.gridRow]}>
         <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>ALT</Text>
-          <AnimatedNumber value={Math.round(telemetry.altitude)} suffix="m" />
+          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>ALT</Text>
+          <AnimatedNumber value={Math.round(telemetry.altitude)} suffix="m" isGrid={isGrid} />
         </View>
         <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>SPD</Text>
-          <AnimatedNumber value={telemetry.groundSpeed.toFixed(1)} suffix="m/s" />
+          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>SPD</Text>
+          <AnimatedNumber value={telemetry.groundSpeed.toFixed(1)} suffix="m/s" isGrid={isGrid} />
         </View>
         <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>BAT</Text>
-          <AnimatedNumber value={Math.round(telemetry.batteryPercent)} suffix="%" />
+          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>BAT</Text>
+          <AnimatedNumber value={Math.round(telemetry.batteryPercent)} suffix="%" isGrid={isGrid} />
         </View>
         <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>SIG</Text>
-          <AnimatedNumber value={Math.round(telemetry.signalStrength)} suffix="%" />
+          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>SIG</Text>
+          <AnimatedNumber value={Math.round(telemetry.signalStrength)} suffix="%" isGrid={isGrid} />
         </View>
         <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>DIST</Text>
-          <AnimatedNumber value={Math.round(telemetry.distanceToHome)} suffix="m" />
+          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>DIST</Text>
+          <AnimatedNumber value={Math.round(telemetry.distanceToHome)} suffix="m" isGrid={isGrid} />
         </View>
       </View>
     </View>
@@ -83,12 +83,16 @@ const styles = StyleSheet.create({
   gridCell: {
     width: '45%',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   label: {
     fontFamily: typography.fonts.bold,
     fontSize: 10,
     marginBottom: 4,
+  },
+  gridLabel: {
+    fontSize: 9,
+    marginBottom: 0,
   },
   metricCell: {
     alignItems: 'center',
@@ -103,9 +107,17 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     fontVariant: typography.tabularNums,
   },
+  gridValueText: {
+    fontSize: typography.sizes.base,
+    letterSpacing: -0.2,
+  },
   suffixText: {
     fontFamily: typography.fonts.medium,
     fontSize: typography.sizes.xs,
     marginLeft: 2,
+  },
+  gridSuffixText: {
+    fontSize: 10,
+    marginLeft: 1,
   }
 });

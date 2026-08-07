@@ -31,7 +31,7 @@ export default function MissionProgressBar({ totalWaypoints, currentWaypoint }: 
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   labelRow: {
     flexDirection: 'row',
