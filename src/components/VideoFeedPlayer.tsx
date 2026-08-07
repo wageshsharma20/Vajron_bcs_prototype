@@ -28,7 +28,7 @@ export default function VideoFeedPlayer({ telemetry }: VideoFeedPlayerProps) {
 
 const styles = StyleSheet.create({
   container: {
-    height: 180,
+    flex: 1,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',

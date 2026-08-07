@@ -126,7 +126,7 @@ export default function MissionControlScreen({ route }: any) {
         onCancel={() => setRtlDialogVisible(false)}
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.mainContent}>
         {/* Video Feed */}
         <View style={styles.videoFeedWrapper}>
           <VideoFeedPlayer telemetry={telemetry} />
@@ -153,7 +153,7 @@ export default function MissionControlScreen({ route }: any) {
             <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -174,8 +174,9 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  scrollContent: {
-    paddingBottom: 40,
+  mainContent: {
+    flex: 1,
+    paddingBottom: 16,
   },
   commandStrip: {
     flexDirection: 'row',
@@ -216,22 +217,22 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
   },
   videoFeedWrapper: {
-    minHeight: 280, // slightly bigger
-    marginVertical: 12,
+    flex: 1, // Takes all available vertical space
   },
   bottomRow: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: 16,
-    alignItems: 'stretch',
+    marginBottom: 16,
   },
   telemetryContainer: {
     flex: 1,
-    paddingRight: 16,
+    paddingRight: 8,
     justifyContent: 'center',
   },
   mapContainerSquare: {
-    width: '45%',
+    flex: 1,
+    marginLeft: 8,
     aspectRatio: 1,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
