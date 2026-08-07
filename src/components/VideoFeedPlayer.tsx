@@ -28,10 +28,10 @@ export default function VideoFeedPlayer({ telemetry }: VideoFeedPlayerProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    aspectRatio: 16 / 9,
+    justifyContent: 'flex-end', // Aligns overlay to bottom properly
+    alignItems: 'flex-start',
   },
   overlay: {
     position: 'absolute',

@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
   },
   videoFeedWrapper: {
-    flex: 1, // Takes all available vertical space
+    marginVertical: 12,
   },
   bottomRow: {
     flexDirection: 'row',
