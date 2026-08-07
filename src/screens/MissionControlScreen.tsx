@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
   },
   videoFeedWrapper: {
+    flex: 1,
     marginVertical: 12,
   },
   bottomRow: {
