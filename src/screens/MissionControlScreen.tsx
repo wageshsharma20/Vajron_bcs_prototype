@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
 import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pause, Play, DownloadCloud, AlertTriangle, MapPin } from 'lucide-react-native';
+import { Pause, Play, DownloadCloud, AlertTriangle, MapPin, UploadCloud } from 'lucide-react-native';
 
 import { useTelemetry } from '../hooks/useTelemetry';
 import { typography } from '../theme';
@@ -13,6 +13,7 @@ import VideoFeedPlayer from '../components/VideoFeedPlayer';
 import GimbalControlPad from '../components/GimbalControlPad';
 import MissionProgressBar from '../components/MissionProgressBar';
 import NotificationBanner from '../components/NotificationBanner';
+import ConfirmActionDialog from '../components/ConfirmActionDialog';
 import { DroneAlert, TelemetryFrame } from '../data/types';
 
 export default function MissionControlScreen({ route }: any) {
@@ -26,6 +27,8 @@ export default function MissionControlScreen({ route }: any) {
   const [flightPath, setFlightPath] = useState<{ latitude: number, longitude: number }[]>([]);
   const [alert, setAlert] = useState<DroneAlert | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [takeOffDialogVisible, setTakeOffDialogVisible] = useState(false);
+  const [rtlDialogVisible, setRtlDialogVisible] = useState(false);
 
   useEffect(() => {
     // Accumulate flight path for polyline
@@ -54,7 +57,13 @@ export default function MissionControlScreen({ route }: any) {
     telemetryService.sendCommand(droneId, isPaused ? 'resume' : 'hold');
   };
 
-  const handleRTL = () => {
+  const handleTakeOffConfirm = () => {
+    setTakeOffDialogVisible(false);
+    telemetryService.sendCommand(droneId, 'takeoff');
+  };
+
+  const handleRtlConfirm = () => {
+    setRtlDialogVisible(false);
     telemetryService.sendCommand(droneId, 'rtl');
   };
 
@@ -78,32 +87,50 @@ export default function MissionControlScreen({ route }: any) {
         </View>
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted, borderRadius: 20, paddingHorizontal: 16 }]} onPress={handlePauseToggle}>
-            {isPaused ? <Play size={16} color={theme.accentAmber} /> : <Pause size={16} color={theme.accentAmber} />}
-            <Text style={[styles.actionBtnText, { color: theme.accentAmber, marginLeft: 6 }]}>{isPaused ? 'RESUME' : 'PAUSE'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, borderRadius: 20, paddingHorizontal: 16 }]} onPress={handleRTL}>
-            <DownloadCloud size={16} color="#FFFFFF" />
-            <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>RTL</Text>
-          </TouchableOpacity>
+          {!telemetry?.isArmed ? (
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.statusGreen, borderRadius: 20, paddingHorizontal: 16 }]} onPress={() => setTakeOffDialogVisible(true)}>
+              <UploadCloud size={16} color="#FFFFFF" />
+              <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>TAKE OFF</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted, borderRadius: 20, paddingHorizontal: 16 }]} onPress={handlePauseToggle}>
+                {isPaused ? <Play size={16} color={theme.accentAmber} /> : <Pause size={16} color={theme.accentAmber} />}
+                <Text style={[styles.actionBtnText, { color: theme.accentAmber, marginLeft: 6 }]}>{isPaused ? 'RESUME' : 'PAUSE'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, borderRadius: 20, paddingHorizontal: 16 }]} onPress={() => setRtlDialogVisible(true)}>
+                <DownloadCloud size={16} color="#FFFFFF" />
+                <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>RTL</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
 
+      <ConfirmActionDialog
+        visible={takeOffDialogVisible}
+        title="Confirm Take Off"
+        message={`${droneId} will arm and climb to launch altitude. Make sure the area is clear.`}
+        confirmLabel="Confirm Take Off"
+        onConfirm={handleTakeOffConfirm}
+        onCancel={() => setTakeOffDialogVisible(false)}
+      />
+
+      <ConfirmActionDialog
+        visible={rtlDialogVisible}
+        title="Confirm Return-to-Launch"
+        message={`${droneId} will abort its current mission and return to the home point.`}
+        confirmLabel="Confirm RTL"
+        destructive={true}
+        onConfirm={handleRtlConfirm}
+        onCancel={() => setRtlDialogVisible(false)}
+      />
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Live Map */}
-        <View style={[styles.mapContainer, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline, justifyContent: 'center', alignItems: 'center' }]}>
-          <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
-          <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
-        </View>
-
-        {/* Telemetry Strip */}
-        <TelemetryHUD telemetry={telemetry} />
-        
-        {/* Progress */}
-        <MissionProgressBar totalWaypoints={20} currentWaypoint={Math.floor((flightPath.length / 200) * 20)} />
-
         {/* Video Feed */}
-        <VideoFeedPlayer telemetry={telemetry} />
+        <View style={styles.videoFeedWrapper}>
+          <VideoFeedPlayer telemetry={telemetry} />
+        </View>
 
         {/* Gimbal Controls */}
         <GimbalControlPad 
@@ -112,6 +139,20 @@ export default function MissionControlScreen({ route }: any) {
           onPhoto={() => telemetryService.sendGimbalCommand(droneId, { isPhotoMode: true })}
           onRecordToggle={() => telemetryService.sendGimbalCommand(droneId, { isRecording: true })}
         />
+
+        {/* Progress */}
+        <MissionProgressBar totalWaypoints={20} currentWaypoint={Math.floor((flightPath.length / 200) * 20)} />
+
+        {/* Telemetry Strip & Live Map */}
+        <View style={styles.bottomRow}>
+          <View style={styles.telemetryContainer}>
+            <TelemetryHUD telemetry={telemetry} isGrid={true} />
+          </View>
+          <View style={[styles.mapContainerSquare, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
+            <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
+            <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -174,12 +215,28 @@ const styles = StyleSheet.create({
     fontFamily: typography.fonts.bold,
     fontSize: typography.sizes.xs,
   },
-  mapContainer: {
-    height: 180,
+  videoFeedWrapper: {
+    minHeight: 280, // slightly bigger
+    marginVertical: 12,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 16,
+    alignItems: 'stretch',
+  },
+  telemetryContainer: {
+    flex: 1,
+    paddingRight: 16,
+    justifyContent: 'center',
+  },
+  mapContainerSquare: {
+    width: '45%',
+    aspectRatio: 1,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
-    margin: 16,
-    marginBottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   droneMarker: {
     width: 20,

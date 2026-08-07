@@ -22,7 +22,9 @@ class TelemetryService {
     console.log(`[Command -> ${droneId}] ${command}`, payload);
     
     // In mock mode, we simulate UI response to command
-    if (command === 'hold' || command === 'pause') {
+    if (command === 'takeoff') {
+      useTelemetryStore.getState().updateTelemetry(droneId, { flightMode: 'auto', isArmed: true });
+    } else if (command === 'hold' || command === 'pause') {
       useTelemetryStore.getState().updateTelemetry(droneId, { flightMode: 'hold' });
     } else if (command === 'resume') {
       useTelemetryStore.getState().updateTelemetry(droneId, { flightMode: 'auto' });
@@ -40,8 +42,16 @@ class TelemetryService {
   private startMockReplay() {
     // Replay at 10Hz to simulate real telemetry load
     this.mockInterval = setInterval(() => {
+      // We only simulate flight if the drone is armed in our store
+      const currentState = useTelemetryStore.getState().telemetry['DRONE-01'];
+      if (!currentState || !currentState.isArmed) return;
+
       const frame = { ...mockFlightPath[this.pathIndex] };
       frame.timestamp = new Date().toISOString();
+      
+      // Keep whatever the flightMode is set to (so RTL/hold sticks)
+      frame.flightMode = currentState.flightMode;
+      frame.isArmed = currentState.isArmed;
 
       // Push high-frequency data into Zustand without triggering global React re-renders
       useTelemetryStore.getState().updateTelemetry(frame.droneId, frame);
