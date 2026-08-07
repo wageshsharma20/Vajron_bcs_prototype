@@ -63,31 +63,27 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
     <View style={styles.outerContainer}>
       <Text style={[styles.panelTitle, { color: theme.textSecondary }]}>CAMERA CONTROLS</Text>
       <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.hairline }]}>
-        
-        {/* Row 1: Zoom */}
-        <View style={styles.zoomRow}>
-          <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.hairline }]} onPress={() => adjustZoom(-1)}>
-            <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>-</Text>
-          </TouchableOpacity>
-          <Text style={[styles.zoomText, { color: theme.textPrimary }]}>{zoom}x</Text>
-          <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.hairline }]} onPress={() => adjustZoom(1)}>
-            <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>+</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Row 2: Camera Actions */}
-        <View style={styles.actionRow}>
+        <View style={styles.singleRow}>
+          
           <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceLight }]} onPress={onPhoto}>
             <Camera size={20} color={theme.textPrimary} />
           </TouchableOpacity>
+
+          <View style={styles.zoomRow}>
+            <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.hairline }]} onPress={() => adjustZoom(-1)}>
+              <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>-</Text>
+            </TouchableOpacity>
+            <Text style={[styles.zoomText, { color: theme.textPrimary }]}>{zoom}x</Text>
+            <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.hairline }]} onPress={() => adjustZoom(1)}>
+              <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>+</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isRecording ? theme.accentRed : theme.surfaceLight }]} onPress={handleRecord}>
             <View style={[styles.recordCircle, { backgroundColor: isRecording ? '#FFF' : theme.accentRed }]} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceLight }]} onPress={handleRecord}>
-            <Video size={20} color={theme.textPrimary} />
-          </TouchableOpacity>
-        </View>
 
+        </View>
       </View>
     </View>
   );
@@ -95,7 +91,8 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
 
 const styles = StyleSheet.create({
   outerContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   panelTitle: {
     fontFamily: typography.fonts.semiBold,
@@ -104,51 +101,52 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   container: {
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
+  },
+  singleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   zoomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    flex: 1,
   },
   zoomBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 24,
+    marginHorizontal: 16,
   },
   zoomBtnText: {
     fontFamily: typography.fonts.regular,
-    fontSize: 24,
+    fontSize: 20,
     marginTop: -2,
   },
   zoomText: {
     fontFamily: typography.fonts.bold,
     fontSize: typography.sizes.base,
-    width: 40,
+    width: 32,
     textAlign: 'center',
   },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   actionBtn: {
-    width: 60,
-    height: 48,
+    width: 52,
+    height: 44,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 8,
   },
   recordCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
   }
 });
