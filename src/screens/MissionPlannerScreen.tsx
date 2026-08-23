@@ -119,6 +119,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center' as const,
     backgroundColor: '#FFFFFF',
   },
   header: {
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.fonts.light,
-    fontSize: 22,
+    fontSize: 26,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
@@ -138,7 +140,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   mapContainer: {
-    flex: 1,
+    maxHeight: 280,
+    minHeight: 180,
     position: 'relative',
   },
   checklistOverlay: {
@@ -163,7 +166,7 @@ const styles = StyleSheet.create({
   },
   paramLabel: {
     fontFamily: typography.fonts.bold,
-    fontSize: 10,
+    fontSize: 13,
     marginBottom: 4,
     textAlign: 'center',
   },

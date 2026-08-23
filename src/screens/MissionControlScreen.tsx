@@ -162,6 +162,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center' as const,
     backgroundColor: '#FFFFFF',
   },
   mainContent: {
@@ -181,7 +183,7 @@ const styles = StyleSheet.create({
   },
   droneId: {
     fontFamily: typography.fonts.light,
-    fontSize: 22,
+    fontSize: 26,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
@@ -207,9 +209,9 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
   },
   videoFeedWrapper: {
-    flex: 1,
-    minHeight: 160,
-    marginVertical: 12,
+    maxHeight: 300,
+    minHeight: 180,
+    marginVertical: 8,
   },
   bottomRow: {
     flexDirection: 'row',

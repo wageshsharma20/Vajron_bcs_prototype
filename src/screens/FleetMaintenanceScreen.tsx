@@ -110,6 +110,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center' as const,
     backgroundColor: '#FFFFFF',
   },
   header: {
@@ -119,7 +121,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.fonts.light,
-    fontSize: 22,
+    fontSize: 26,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
@@ -172,7 +174,7 @@ const styles = StyleSheet.create({
   },
   suppTitle: {
     fontFamily: typography.fonts.semiBold,
-    fontSize: 10,
+    fontSize: 13,
     letterSpacing: 1,
     marginBottom: 12,
   },

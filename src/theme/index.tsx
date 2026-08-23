@@ -9,13 +9,13 @@ export const typography = {
   },
   tabularNums: ['tabular-nums'] as const,
   sizes: {
-    xs: 11,
-    sm: 13,
-    base: 15,
-    md: 17,
-    lg: 20,
-    xl: 26,
-    xxl: 34,
+    xs: 13,
+    sm: 15,
+    base: 17,
+    md: 19,
+    lg: 24,
+    xl: 30,
+    xxl: 38,
   }
 } as const;
 
