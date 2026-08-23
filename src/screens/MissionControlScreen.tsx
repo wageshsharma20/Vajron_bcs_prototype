@@ -66,7 +66,7 @@ export default function MissionControlScreen({ route }: any) {
     setRtlDialogVisible(false);
     
     // Simulate RTL returning and resetting everything to Time 0
-    telemetryService.resetReplay();
+    telemetryService.resetReplay(droneId);
     useTelemetryStore.getState().resetTelemetry(droneId);
     setFlightPath([]);
     setIsPaused(false);

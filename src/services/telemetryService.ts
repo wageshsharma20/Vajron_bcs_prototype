@@ -34,13 +34,15 @@ class TelemetryService {
   }
 
   sendGimbalCommand(droneId: string, state: Partial<GimbalState>) {
-    console.log(`[Gimbal -> ${droneId}
-
-  resetReplay() {
-    this.pathIndex = 0;
-  }]`, state);
+    console.log(`[Gimbal -> ${droneId}]`, state);
     // Directly update the Zustand store so the UI reflects the gimbal change instantly
     useTelemetryStore.getState().updateGimbal(droneId, state);
+  }
+
+  resetReplay(droneId: string) {
+    this.pathIndex = 0;
+    // Disarm it immediately so the interval loop doesn't push any new flight frames
+    useTelemetryStore.getState().updateTelemetry(droneId, { isArmed: false, flightMode: 'idle' });
   }
 
   private startMockReplay() {
