@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   mapContainer: {
-    flex: 1,
+    width: '50%',
     position: 'relative',
     padding: 20,
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     right: 0,
   },
   sidebar: {
-    flex: 1,
+    width: '50%',
     paddingHorizontal: 20,
     paddingTop: 16,
     borderLeftWidth: StyleSheet.hairlineWidth,
