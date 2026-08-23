@@ -64,7 +64,13 @@ export default function MissionControlScreen({ route }: any) {
 
   const handleRtlConfirm = () => {
     setRtlDialogVisible(false);
-    telemetryService.sendCommand(droneId, 'rtl');
+    
+    // Simulate RTL returning and resetting everything to Time 0
+    telemetryService.resetReplay();
+    useTelemetryStore.getState().resetTelemetry(droneId);
+    setFlightPath([]);
+    setIsPaused(false);
+    setAlert(null);
   };
 
   return (

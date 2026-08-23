@@ -10,6 +10,7 @@ interface TelemetryStore {
   // Actions
   updateTelemetry: (droneId: string, frame: Partial<TelemetryFrame>) => void;
   updateGimbal: (droneId: string, state: Partial<GimbalState>) => void;
+  resetTelemetry: (droneId: string) => void;
 }
 
 const defaultGimbal: GimbalState = {
@@ -48,6 +49,17 @@ export const useTelemetryStore = create<TelemetryStore>((set) => ({
         ...state.gimbal[droneId],
         ...gimbalState,
       }
+    }
+  })),
+
+  resetTelemetry: (droneId) => set((state) => ({
+    telemetry: {
+      ...state.telemetry,
+      [droneId]: { ...initialTelemetry[droneId] }
+    },
+    gimbal: {
+      ...state.gimbal,
+      [droneId]: { ...defaultGimbal }
     }
   }))
 }));

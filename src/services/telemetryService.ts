@@ -34,7 +34,11 @@ class TelemetryService {
   }
 
   sendGimbalCommand(droneId: string, state: Partial<GimbalState>) {
-    console.log(`[Gimbal -> ${droneId}]`, state);
+    console.log(`[Gimbal -> ${droneId}
+
+  resetReplay() {
+    this.pathIndex = 0;
+  }]`, state);
     // Directly update the Zustand store so the UI reflects the gimbal change instantly
     useTelemetryStore.getState().updateGimbal(droneId, state);
   }
