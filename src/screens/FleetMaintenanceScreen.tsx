@@ -109,18 +109,8 @@ export default function FleetMaintenanceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    maxWidth: 600,
     width: '100%',
-    alignSelf: 'center',
     backgroundColor: '#FFFFFF',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 0px 20px rgba(0,0,0,0.05)',
-        borderLeftWidth: StyleSheet.hairlineWidth,
-        borderRightWidth: StyleSheet.hairlineWidth,
-        borderColor: '#E2E4E9',
-      },
-    }),
   },
   header: {
     paddingHorizontal: 20,
