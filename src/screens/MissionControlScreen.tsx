@@ -127,30 +127,38 @@ export default function MissionControlScreen({ route }: any) {
       />
 
       <View style={styles.mainContent}>
-        {/* Video Feed */}
-        <View style={styles.videoFeedWrapper}>
-          <VideoFeedPlayer telemetry={telemetry} />
+        {/* Top Section: Video (Left) + Map (Right) */}
+        <View style={styles.topRow}>
+          <View style={styles.videoColumn}>
+            <View style={styles.videoFeedWrapper}>
+              <VideoFeedPlayer telemetry={telemetry} />
+            </View>
+          </View>
+          <View style={styles.mapColumn}>
+            <View style={[styles.mapContainerSquare, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
+              <MapPin size={30} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
+              <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Gimbal Controls */}
-        <GimbalControlPad 
-          onPanTilt={(p, y) => telemetryService.sendGimbalCommand(droneId, { pitch: p, yaw: y })}
-          onZoom={(z) => telemetryService.sendGimbalCommand(droneId, { zoomLevel: z })}
-          onPhoto={() => telemetryService.sendGimbalCommand(droneId, { isPhotoMode: true })}
-          onRecordToggle={() => telemetryService.sendGimbalCommand(droneId, { isRecording: true })}
-        />
-
-        {/* Progress */}
-        <MissionProgressBar totalWaypoints={20} currentWaypoint={Math.floor((flightPath.length / 200) * 20)} />
-
-        {/* Telemetry Strip & Live Map */}
-        <View style={styles.bottomRow}>
-          <View style={styles.telemetryContainer}>
-            <TelemetryHUD telemetry={telemetry} isGrid={true} />
+        {/* Bottom Section: Controls & Telemetry */}
+        <View style={styles.bottomSection}>
+          <View style={styles.controlsRow}>
+            <View style={styles.telemetryWrapper}>
+              <TelemetryHUD telemetry={telemetry} isGrid={true} />
+            </View>
+            <View style={styles.gimbalWrapper}>
+              <GimbalControlPad 
+                onPanTilt={(p, y) => telemetryService.sendGimbalCommand(droneId, { pitch: p, yaw: y })}
+                onZoom={(z) => telemetryService.sendGimbalCommand(droneId, { zoomLevel: z })}
+                onPhoto={() => telemetryService.sendGimbalCommand(droneId, { isPhotoMode: true })}
+                onRecordToggle={() => telemetryService.sendGimbalCommand(droneId, { isRecording: true })}
+              />
+            </View>
           </View>
-          <View style={[styles.mapContainerSquare, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
-            <MapPin size={30} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
-            <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
+          <View style={styles.progressWrapper}>
+            <MissionProgressBar totalWaypoints={20} currentWaypoint={Math.floor((flightPath.length / 200) * 20)} />
           </View>
         </View>
       </View>
@@ -206,46 +214,46 @@ const styles = StyleSheet.create({
     fontFamily: typography.fonts.bold,
     fontSize: typography.sizes.xs,
   },
+  topRow: {
+    flex: 1,
+    flexDirection: 'row',
+    padding: 16,
+  },
+  videoColumn: {
+    flex: 2.2, // ~68% width
+    paddingRight: 16,
+  },
+  mapColumn: {
+    flex: 1, // ~32% width
+  },
   videoFeedWrapper: {
     flex: 1,
-    minHeight: 300,
-    marginVertical: 8,
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 16,
-    alignItems: 'stretch',
-  },
-  telemetryContainer: {
-    flex: 1,
-    paddingRight: 8,
-    justifyContent: 'center',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   mapContainerSquare: {
     flex: 1,
-    marginLeft: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  droneMarker: {
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
+  bottomSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  controlsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  droneArrow: {
-    width: 0,
-    height: 0,
-    backgroundColor: "transparent",
-    borderStyle: "solid",
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderBottomWidth: 16,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-  }
+  gimbalWrapper: {
+    flex: 1,
+  },
+  telemetryWrapper: {
+    flex: 2.2,
+    paddingRight: 16,
+  },
+  progressWrapper: {
+    marginTop: 16,
+  },
 });
