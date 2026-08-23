@@ -74,14 +74,14 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <Check size={28} color="#FFFFFF" strokeWidth={3} />;
+        return <Check size={24} color="#FFFFFF" strokeWidth={3} />;
       case 'error':
-        return <X size={28} color="#FFFFFF" strokeWidth={3} />;
+        return <X size={24} color="#FFFFFF" strokeWidth={3} />;
       case 'warning':
-        return <AlertCircle size={28} color="#FFFFFF" strokeWidth={3} />;
+        return <AlertCircle size={24} color="#FFFFFF" strokeWidth={3} />;
       case 'info':
       default:
-        return <Info size={28} color="#FFFFFF" strokeWidth={3} />;
+        return <Info size={24} color="#FFFFFF" strokeWidth={3} />;
     }
   };
 
@@ -114,19 +114,20 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     borderRadius: 8,
-    borderLeftWidth: 6,
-    padding: 16,
+    borderLeftWidth: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 9999,
   },
   iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   textContainer: {
     flex: 1,
