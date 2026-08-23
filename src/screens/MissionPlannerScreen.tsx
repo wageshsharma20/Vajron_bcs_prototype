@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     right: 0,
   },
   sidebar: {
-    width: 420,
+    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 16,
     borderLeftWidth: StyleSheet.hairlineWidth,
