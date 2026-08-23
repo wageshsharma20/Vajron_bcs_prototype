@@ -51,64 +51,66 @@ export default function MissionPlannerScreen({ navigation }: any) {
         <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Park: Sanjay Van  ·  DRONE-01</Text>
       </View>
 
-      <View style={styles.mapContainer}>
-        <MapWaypointEditor 
-          ref={mapRef}
-          waypoints={waypoints}
-          onWaypointsChange={setWaypoints}
-          defaultAltitude={parseInt(altitude) || 30}
-        />
+      <View style={styles.contentRow}>
+        <View style={styles.mapContainer}>
+          <MapWaypointEditor 
+            ref={mapRef}
+            waypoints={waypoints}
+            onWaypointsChange={setWaypoints}
+            defaultAltitude={parseInt(altitude) || 30}
+          />
 
-        {showChecklist && (
-          <View style={styles.checklistOverlay}>
-            <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} />
-          </View>
-        )}
-      </View>
-
-      {/* Toolbar */}
-      <View style={[styles.toolbar, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 60, borderTopColor: theme.hairline }]}>
-        <View style={styles.paramsRow}>
-          <View style={styles.paramInputGroup}>
-            <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>ALT (m)</Text>
-            <TextInput 
-              style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
-              value={altitude}
-              onChangeText={setAltitude}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={styles.paramInputGroup}>
-            <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>SPD (m/s)</Text>
-            <TextInput 
-              style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
-              value={speed}
-              onChangeText={setSpeed}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={styles.paramInputGroup}>
-            <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>OVERLAP %</Text>
-            <TextInput 
-              style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
-              value={overlap}
-              onChangeText={setOverlap}
-              keyboardType="numeric"
-            />
-          </View>
+          {showChecklist && (
+            <View style={styles.checklistOverlay}>
+              <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} />
+            </View>
+          )}
         </View>
 
-        <View style={styles.actionRowSecondary}>
-          <TouchableOpacity onPress={() => mapRef.current?.clearWaypoints()} style={styles.textLinkBtn}>
-            <Text style={[styles.textLink, { color: theme.textSecondary }]}>Clear Map</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.secondaryBtn, { borderColor: theme.hairline }]} onPress={handleSurveyGrid}>
-            <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Sidebar */}
+        <View style={[styles.sidebar, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 60, borderLeftColor: theme.hairline }]}>
+          <View style={styles.paramsRow}>
+            <View style={styles.paramInputGroup}>
+              <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>ALT (m)</Text>
+              <TextInput 
+                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
+                value={altitude}
+                onChangeText={setAltitude}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.paramInputGroup}>
+              <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>SPD (m/s)</Text>
+              <TextInput 
+                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
+                value={speed}
+                onChangeText={setSpeed}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.paramInputGroup}>
+              <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>OVERLAP %</Text>
+              <TextInput 
+                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
+                value={overlap}
+                onChangeText={setOverlap}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
 
-        <View style={styles.checklistContainer}>
-          <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} isLaunchDisabled={waypoints.length === 0} />
+          <View style={styles.actionRowSecondary}>
+            <TouchableOpacity onPress={() => mapRef.current?.clearWaypoints()} style={styles.textLinkBtn}>
+              <Text style={[styles.textLink, { color: theme.textSecondary }]}>Clear Map</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.secondaryBtn, { borderColor: theme.hairline }]} onPress={handleSurveyGrid}>
+              <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.checklistContainer}>
+            <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} isLaunchDisabled={waypoints.length === 0} />
+          </View>
         </View>
       </View>
     </View>
@@ -137,6 +139,10 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     marginTop: 2,
   },
+  contentRow: {
+    flex: 1,
+    flexDirection: 'row',
+  },
   mapContainer: {
     flex: 1,
     position: 'relative',
@@ -147,10 +153,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
-  toolbar: {
+  sidebar: {
+    width: 420,
     paddingHorizontal: 20,
     paddingTop: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderLeftWidth: StyleSheet.hairlineWidth,
   },
   paramsRow: {
     flexDirection: 'row',
