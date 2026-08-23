@@ -12,7 +12,7 @@ import TelemetryHUD from '../components/TelemetryHUD';
 import VideoFeedPlayer from '../components/VideoFeedPlayer';
 import GimbalControlPad from '../components/GimbalControlPad';
 import MissionProgressBar from '../components/MissionProgressBar';
-import NotificationBanner from '../components/NotificationBanner';
+import { NotificationBanner } from '../components/NotificationBanner';
 import ConfirmActionDialog from '../components/ConfirmActionDialog';
 import { DroneAlert, TelemetryFrame } from '../data/types';
 
