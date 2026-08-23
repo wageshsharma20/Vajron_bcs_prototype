@@ -64,7 +64,7 @@ export default function NotificationBanner({
   return (
     <Animated.View style={[styles.container, animatedStyle, { backgroundColor: getBackgroundColor() }]}>
       <View style={styles.iconContainer}>
-        <AlertTriangle size={24} color="#FFFFFF" />
+        <AlertTriangle size={30} color="#FFFFFF" />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.title}>{title}</Text>
@@ -96,14 +96,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fonts.bold,
-    fontSize: 14,
+    fontSize: 19,
     color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   message: {
     fontFamily: typography.fonts.medium,
-    fontSize: 13,
+    fontSize: 18,
     color: '#FFFFFF',
     opacity: 0.9,
   }

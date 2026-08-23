@@ -100,7 +100,7 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
     <Animated.View style={[styles.container, { opacity: fadeAnim, borderBottomColor: theme.hairline }]}>
       <Pressable onPress={toggleExpand} style={styles.header}>
         <View style={styles.headerLeft}>
-          <IconComponent size={16} color={theme.textPrimary} strokeWidth={1.5} />
+          <IconComponent size={22} color={theme.textPrimary} strokeWidth={1.5} />
           <Text style={[styles.categoryName, { color: theme.textPrimary }]}>
             {data.category}
           </Text>
@@ -110,10 +110,10 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
             {badgeText}
           </Text>
           <Pressable onPress={(e) => { e.stopPropagation(); /* Implement download logic */ }}>
-            <Download size={18} color={theme.textSecondary} strokeWidth={1.5} />
+            <Download size={24} color={theme.textSecondary} strokeWidth={1.5} />
           </Pressable>
           <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <ChevronDown size={16} color={theme.textSecondary} strokeWidth={1} />
+            <ChevronDown size={22} color={theme.textSecondary} strokeWidth={1} />
           </Animated.View>
         </View>
       </Pressable>
@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontFamily: typography.fonts.light, // Zen thin text
-    fontSize: 18,
+    fontSize: 23,
     letterSpacing: -0.5,
   },
   badgeText: {
     fontFamily: typography.fonts.medium,
-    fontSize: 12,
+    fontSize: 17,
     letterSpacing: 1.2,
   },
   content: {
@@ -204,11 +204,11 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontFamily: typography.fonts.regular,
-    fontSize: 14,
+    fontSize: 19,
   },
   itemValue: {
     fontFamily: typography.fonts.regular,
-    fontSize: 14,
+    fontSize: 19,
     flex: 1,
     textAlign: 'right',
   },

@@ -114,9 +114,9 @@ export default function FleetDashboardScreen({ navigation }: any) {
 
         {/* Fleet Summary Row */}
         <View style={styles.summaryRow}>
-          <CircularScore score={readiness} label="Readiness" size={80} strokeWidth={8} />
-          <CircularScore score={avgBattery} label="Avg Battery" size={80} strokeWidth={8} />
-          <CircularScore score={avgLink} label="Link Quality" size={80} strokeWidth={8} />
+          <CircularScore score={readiness} label="Readiness" size={110} strokeWidth={8} />
+          <CircularScore score={avgBattery} label="Avg Battery" size={110} strokeWidth={8} />
+          <CircularScore score={avgLink} label="Link Quality" size={110} strokeWidth={8} />
         </View>
 
         <View style={[styles.divider, { backgroundColor: theme.hairline }]} />
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.fonts.light,
-    fontSize: 22,
+    fontSize: 27,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },

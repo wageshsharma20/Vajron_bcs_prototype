@@ -89,17 +89,17 @@ export default function MissionControlScreen({ route }: any) {
         <View style={styles.actionsRow}>
           {!telemetry?.isArmed ? (
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.statusGreen, borderRadius: 20, paddingHorizontal: 16 }]} onPress={() => setTakeOffDialogVisible(true)}>
-              <UploadCloud size={16} color="#FFFFFF" />
+              <UploadCloud size={22} color="#FFFFFF" />
               <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>TAKE OFF</Text>
             </TouchableOpacity>
           ) : (
             <>
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted, borderRadius: 20, paddingHorizontal: 16 }]} onPress={handlePauseToggle}>
-                {isPaused ? <Play size={16} color={theme.accentAmber} /> : <Pause size={16} color={theme.accentAmber} />}
+                {isPaused ? <Play size={22} color={theme.accentAmber} /> : <Pause size={22} color={theme.accentAmber} />}
                 <Text style={[styles.actionBtnText, { color: theme.accentAmber, marginLeft: 6 }]}>{isPaused ? 'RESUME' : 'PAUSE'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, borderRadius: 20, paddingHorizontal: 16 }]} onPress={() => setRtlDialogVisible(true)}>
-                <DownloadCloud size={16} color="#FFFFFF" />
+                <DownloadCloud size={22} color="#FFFFFF" />
                 <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>RTL</Text>
               </TouchableOpacity>
             </>
@@ -149,7 +149,7 @@ export default function MissionControlScreen({ route }: any) {
             <TelemetryHUD telemetry={telemetry} isGrid={true} />
           </View>
           <View style={[styles.mapContainerSquare, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
-            <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
+            <MapPin size={30} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
             <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
           </View>
         </View>
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   droneId: {
     fontFamily: typography.fonts.light,
-    fontSize: 26,
+    fontSize: 31,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },

@@ -55,7 +55,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
             style={[styles.tabButton, { outlineStyle: 'none' } as any]}
           >
             <View style={styles.iconContainer}>
-              <IconComponent size={24} color={color} strokeWidth={isFocused ? 2.5 : 2} />
+              <IconComponent size={30} color={color} strokeWidth={isFocused ? 2.5 : 2} />
               {route.name === 'MissionControl' && (
                 <View style={[styles.activeDot, { backgroundColor: theme.accentAmber }]} />
               )}
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   label: {
-    fontSize: 11,
+    fontSize: 16,
   },
   activeDot: {
     position: 'absolute',

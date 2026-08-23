@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   overlayStats: {
     color: '#CCC',
     fontFamily: typography.fonts.medium,
-    fontSize: 10,
+    fontSize: 15,
     marginTop: 2,
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 1, height: 1 },

@@ -1,14 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useTheme } from '../theme';
-import Animated from 'react-native-reanimated';
 import { DroneAsset, TelemetryFrame } from '../data/types';
 import { typography } from '../theme';
 import { usePulseAnimation } from '../hooks/usePulseAnimation';
 
+/**
+ * Only the three fields the card actually renders. Narrowing this is what lets
+ * the Fleet screen subscribe shallowly and re-render when a displayed value
+ * changes rather than on every 10 Hz telemetry frame.
+ */
+export type DroneCardTelemetry = Pick<
+  TelemetryFrame,
+  'batteryPercent' | 'signalStrength' | 'gpsFixType'
+>;
+
 interface DroneStatusCardProps {
   drone: DroneAsset;
-  telemetry?: TelemetryFrame;
+  telemetry?: DroneCardTelemetry;
   onPress: () => void;
 }
 

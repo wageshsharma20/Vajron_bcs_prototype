@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.fonts.light,
-    fontSize: 26,
+    fontSize: 31,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   suppTitle: {
     fontFamily: typography.fonts.semiBold,
-    fontSize: 13,
+    fontSize: 18,
     letterSpacing: 1,
     marginBottom: 12,
   },

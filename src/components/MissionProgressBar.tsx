@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.fonts.medium,
-    fontSize: 10,
+    fontSize: 15,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },

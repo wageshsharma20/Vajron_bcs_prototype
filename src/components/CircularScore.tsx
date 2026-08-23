@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.fonts.medium,
-    fontSize: 14,
+    fontSize: 19,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginTop: 32, // Large gap (Ma)

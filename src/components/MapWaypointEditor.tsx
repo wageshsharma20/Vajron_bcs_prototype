@@ -39,7 +39,7 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
       <View style={styles.container}>
       {/* Mock Map Background */}
       <View style={[styles.mapPlaceholder, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
-        <MapPin size={24} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
+        <MapPin size={30} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
         <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
       </View>
       </View>
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   markerText: {
     color: '#FFF',
     fontFamily: typography.fonts.bold,
-    fontSize: 10,
+    fontSize: 15,
   },
   mapPlaceholder: {
     flex: 1,

@@ -91,11 +91,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.fonts.bold,
-    fontSize: 10,
+    fontSize: 15,
     marginBottom: 4,
   },
   gridLabel: {
-    fontSize: 9,
+    fontSize: 14,
     marginBottom: 0,
   },
   metricCell: {
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   gridSuffixText: {
-    fontSize: 10,
+    fontSize: 15,
     marginLeft: 1,
   }
 });

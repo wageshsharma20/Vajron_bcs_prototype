@@ -66,7 +66,7 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
         <View style={styles.singleRow}>
           
           <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceLight }]} onPress={onPhoto}>
-            <Camera size={20} color={theme.textPrimary} />
+            <Camera size={26} color={theme.textPrimary} />
           </TouchableOpacity>
 
           <View style={styles.zoomRow}>
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     fontFamily: typography.fonts.semiBold,
-    fontSize: 10,
+    fontSize: 15,
     letterSpacing: 1,
     marginBottom: 6,
   },
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   zoomBtnText: {
     fontFamily: typography.fonts.regular,
-    fontSize: 18,
+    fontSize: 23,
     marginTop: -2,
   },
   zoomText: {

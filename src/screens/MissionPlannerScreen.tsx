@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: typography.fonts.light,
-    fontSize: 26,
+    fontSize: 31,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   paramLabel: {
     fontFamily: typography.fonts.bold,
-    fontSize: 13,
+    fontSize: 18,
     marginBottom: 4,
     textAlign: 'center',
   },
