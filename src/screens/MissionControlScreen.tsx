@@ -162,8 +162,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    maxWidth: 960,
-    alignSelf: 'center' as const,
     backgroundColor: '#FFFFFF',
   },
   mainContent: {
@@ -209,8 +207,8 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
   },
   videoFeedWrapper: {
-    maxHeight: 300,
-    minHeight: 180,
+    flex: 1,
+    minHeight: 300,
     marginVertical: 8,
   },
   bottomRow: {

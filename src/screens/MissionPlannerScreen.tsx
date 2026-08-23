@@ -119,8 +119,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    maxWidth: 960,
-    alignSelf: 'center' as const,
     backgroundColor: '#FFFFFF',
   },
   header: {
@@ -140,8 +138,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   mapContainer: {
-    maxHeight: 280,
-    minHeight: 180,
+    flex: 1,
     position: 'relative',
   },
   checklistOverlay: {
