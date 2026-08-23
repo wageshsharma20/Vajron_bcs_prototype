@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   statusBadgeContainer: {
-    width: 65,
+    width: 90,
   },
   statusBadge: {
     fontFamily: typography.fonts.bold,
