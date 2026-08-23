@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     position: 'relative',
+    padding: 20,
   },
   checklistOverlay: {
     position: 'absolute',

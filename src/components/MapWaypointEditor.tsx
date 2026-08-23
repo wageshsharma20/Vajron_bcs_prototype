@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
-    marginVertical: 12,
+    
   }
 });
 
