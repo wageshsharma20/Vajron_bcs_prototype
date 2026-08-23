@@ -114,9 +114,9 @@ export default function FleetDashboardScreen({ navigation }: any) {
 
         {/* Fleet Summary Row */}
         <View style={styles.summaryRow}>
-          <CircularScore score={readiness} label="Readiness" size={110} strokeWidth={8} />
-          <CircularScore score={avgBattery} label="Avg Battery" size={110} strokeWidth={8} />
-          <CircularScore score={avgLink} label="Link Quality" size={110} strokeWidth={8} />
+          <CircularScore score={readiness} label="Readiness" size={90} strokeWidth={8} />
+          <CircularScore score={avgBattery} label="Avg Battery" size={90} strokeWidth={8} />
+          <CircularScore score={avgLink} label="Link Quality" size={90} strokeWidth={8} />
         </View>
 
         <View style={[styles.divider, { backgroundColor: theme.hairline }]} />
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'baseline',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   headerTitle: {
     fontFamily: typography.fonts.light,
@@ -162,11 +162,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   statusStrip: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   statusText: {
     fontFamily: typography.fonts.bold,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 10,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

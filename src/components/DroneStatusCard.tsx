@@ -96,7 +96,7 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   header: {
