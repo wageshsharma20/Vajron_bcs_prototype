@@ -7,28 +7,30 @@ import Animated, {
   Easing
 } from 'react-native-reanimated';
 import { Text } from 'react-native-paper';
-import { AlertTriangle, X } from 'lucide-react-native';
-import { useTheme, typography } from '../theme';
+import { Check, X, AlertCircle, Info } from 'lucide-react-native';
+import { typography } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface NotificationBannerProps {
-  title: string;
+  title?: string;
   message: string;
-  type?: 'warning' | 'error' | 'info';
+  type?: 'success' | 'error' | 'warning' | 'info';
   durationMs?: number;
   onDismiss?: () => void;
 }
 
-export default function NotificationBanner({ 
-  title = 'Notification', 
+export const NotificationBanner: React.FC<NotificationBannerProps> = ({ 
+  title, 
   message, 
   type = 'warning',
   durationMs = 5000,
   onDismiss
-}: NotificationBannerProps) {
-  const { theme } = useTheme();
+}) => {
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-150);
+
+  // If title is not provided, use a default based on type
+  const displayTitle = title || (type.charAt(0).toUpperCase() + type.slice(1));
 
   useEffect(() => {
     // Slide down smoothly without bounce
@@ -55,19 +57,50 @@ export default function NotificationBanner({
     };
   });
 
-  const getBackgroundColor = () => {
-    if (type === 'error') return theme.accentRed;
-    if (type === 'warning') return theme.statusYellow;
-    return theme.accentTeal;
+  const getStyleColors = () => {
+    switch (type) {
+      case 'success':
+        return { bg: '#EAF8F1', border: '#00C896', iconBg: '#00C896' };
+      case 'error':
+        return { bg: '#FDECEA', border: '#EE5D5D', iconBg: '#EE5D5D' };
+      case 'warning':
+        return { bg: '#FDF6E3', border: '#F2C14E', iconBg: '#F2C14E' };
+      case 'info':
+      default:
+        return { bg: '#F0F0FF', border: '#5B68F6', iconBg: '#5B68F6' };
+    }
   };
 
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return <Check size={28} color="#FFFFFF" strokeWidth={3} />;
+      case 'error':
+        return <X size={28} color="#FFFFFF" strokeWidth={3} />;
+      case 'warning':
+        return <AlertCircle size={28} color="#FFFFFF" strokeWidth={3} />;
+      case 'info':
+      default:
+        return <Info size={28} color="#FFFFFF" strokeWidth={3} />;
+    }
+  };
+
+  const colors = getStyleColors();
+
   return (
-    <Animated.View style={[styles.container, animatedStyle, { backgroundColor: getBackgroundColor() }]}>
-      <View style={styles.iconContainer}>
-        <AlertTriangle size={30} color="#FFFFFF" />
+    <Animated.View style={[
+      styles.container, 
+      animatedStyle, 
+      { 
+        backgroundColor: colors.bg,
+        borderLeftColor: colors.border,
+      }
+    ]}>
+      <View style={[styles.iconCircle, { backgroundColor: colors.iconBg }]}>
+        {getIcon()}
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{displayTitle}</Text>
         <Text style={styles.message}>{message}</Text>
       </View>
     </Animated.View>
@@ -80,31 +113,36 @@ const styles = StyleSheet.create({
     top: 0,
     left: 16,
     right: 16,
-    borderRadius: 12,
+    borderRadius: 8,
+    borderLeftWidth: 6,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)', // subtle border instead of shadow
     zIndex: 9999,
   },
-  iconContainer: {
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 16,
   },
   textContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   title: {
     fontFamily: typography.fonts.bold,
-    fontSize: 19,
-    color: '#FFFFFF',
+    fontSize: 17,
+    color: '#333333',
     marginBottom: 4,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   message: {
-    fontFamily: typography.fonts.medium,
-    fontSize: 18,
-    color: '#FFFFFF',
-    opacity: 0.9,
+    fontFamily: typography.fonts.regular,
+    fontSize: 14,
+    color: '#555555',
+    lineHeight: 20,
   }
 });
