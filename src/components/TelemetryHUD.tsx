@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gridCell: {
-    width: '45%',
+    width: '33.33%',
     alignItems: 'flex-start',
     marginBottom: 8,
   },
