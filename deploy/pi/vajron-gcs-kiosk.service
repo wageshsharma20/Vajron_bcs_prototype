@@ -1,0 +1,48 @@
+[Unit]
+# The GCS kiosk itself: a bare Wayland compositor (cage) running Chromium
+# fullscreen on tty1, with no desktop, no panel and no launcher behind it.
+# Booting to console rather than a desktop is what makes this a real lockdown —
+# there is no other application to switch to, because none is running.
+Description=Vajron GCS kiosk
+After=vajron-gcs.service systemd-user-sessions.service
+Wants=vajron-gcs.service
+Conflicts=getty@tty1.service
+
+# ESCAPE HATCH. If this file exists the kiosk does not start.
+# The boot partition is FAT32, so it can be created from any Mac or Windows
+# machine with nothing but the SD card and a card reader — no Linux, no login,
+# no password. This is the recovery path that cannot fail, and it exists because
+# a kiosk that can lock its owner out is a broken kiosk.
+ConditionPathExists=!/boot/firmware/vajron-nokiosk
+ConditionPathExists=!/boot/vajron-nokiosk
+
+# If the kiosk cannot start at all (bad cage build, broken GPU, missing bundle)
+# it must eventually give up rather than respawn forever holding tty1. Stopping
+# after repeated rapid failures frees the virtual terminals so Ctrl+Alt+F2 still
+# works — a dead GCS you can log into beats a flickering one you cannot.
+StartLimitIntervalSec=300
+StartLimitBurst=15
+
+[Service]
+Type=simple
+User=VAJRON_USER
+# PAMName + TTYPath give the service a real login session and a seat, which
+# cage needs to open the display and read the keyboard.
+PAMName=login
+TTYPath=/dev/tty1
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+Environment=XDG_RUNTIME_DIR=/run/user/VAJRON_UID
+Environment=XDG_SESSION_TYPE=wayland
+ExecStart=/usr/local/bin/vajron-gcs-kiosk
+# Comes straight back if it is ever closed, so the GCS is the only thing on
+# screen. vajron-unlock stops the unit outright, which is the supported way out.
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

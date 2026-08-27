@@ -1,0 +1,20 @@
+[Unit]
+# Serves the exported GCS web bundle to the Pi's own browser.
+# The bundle references its JS and fonts from absolute paths (/_expo/...), so the
+# document root must be the dist directory itself — not a parent folder.
+Description=Vajron GCS static bundle
+After=network.target
+
+[Service]
+Type=simple
+# python3 ships with Raspberry Pi OS, so this needs nothing installed.
+# http.server is threaded on Python 3.7+, which is ample for one kiosk client.
+# Bound to 0.0.0.0 so another laptop on the field network can also open it;
+# change to 127.0.0.1 to keep it strictly on-device.
+ExecStart=/usr/bin/python3 -m http.server 8080 --directory /opt/vajron-gcs/dist --bind 0.0.0.0
+Restart=always
+RestartSec=2
+User=vajron-gcs-user-placeholder
+
+[Install]
+WantedBy=multi-user.target

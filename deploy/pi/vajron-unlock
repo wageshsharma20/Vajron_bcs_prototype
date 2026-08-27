@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#
+# Safe code. Stops the GCS kiosk and hands back the Pi.
+#
+# The code is never stored on the Pi — only a salted SHA-256 of it, in
+# /etc/vajron-gcs/unlock.hash (root-owned, world-readable but not writable).
+# Getting it wrong costs a growing delay, so guessing at the console is slow.
+#
+#   vajron-unlock            stop the kiosk for this session
+#   vajron-unlock --desktop  stop it and start the desktop too (if installed)
+set -uo pipefail
+
+HASH_FILE=/etc/vajron-gcs/unlock.hash
+FAIL_FILE=/run/vajron-gcs.failures
+WANT_DESKTOP=0
+[[ "${1:-}" == "--desktop" ]] && WANT_DESKTOP=1
+
+if [[ ! -r "$HASH_FILE" ]]; then
+  echo "No safe code is configured on this Pi (missing $HASH_FILE)." >&2
+  echo "Re-run install-on-pi.sh to set one." >&2
+  exit 1
+fi
+
+salt="$(sed -n 1p "$HASH_FILE")"
+expected="$(sed -n 2p "$HASH_FILE")"
+
+# Back off after repeated failures so the console cannot be brute-forced quickly.
+failures=$(cat "$FAIL_FILE" 2>/dev/null || echo 0)
+if (( failures > 0 )); then
+  delay=$(( failures * 3 ))
+  (( delay > 30 )) && delay=30
+  echo "Previous failed attempts: ${failures}. Waiting ${delay}s."
+  sleep "$delay"
+fi
+
+read -rsp 'Safe code: ' code
+echo
+
+actual="$(printf '%s' "${salt}${code}" | shasum -a 256 2>/dev/null | cut -d' ' -f1)"
+[[ -n "$actual" ]] || actual="$(printf '%s' "${salt}${code}" | sha256sum | cut -d' ' -f1)"
+unset code
+
+if [[ "$actual" != "$expected" ]]; then
+  echo $(( failures + 1 )) > "$FAIL_FILE" 2>/dev/null || true
+  echo "Wrong code." >&2
+  exit 1
+fi
+
+echo 0 > "$FAIL_FILE" 2>/dev/null || true
+
+echo "Code accepted — stopping the kiosk."
+sudo systemctl stop vajron-gcs-kiosk.service
+
+if (( WANT_DESKTOP )); then
+  if systemctl list-unit-files | grep -q '^lightdm\.service'; then
+    sudo systemctl start lightdm.service && echo "Desktop starting."
+  else
+    echo "No desktop is installed on this image — you have the console and SSH."
+  fi
+fi
+
+cat <<'DONE'
+
+The kiosk is stopped. It stays down until you start it again or reboot.
+
+  vajron-lock        put the kiosk back up now
+  sudo reboot        also brings the kiosk back
+DONE

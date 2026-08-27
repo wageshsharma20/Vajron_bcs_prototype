@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "GCS Dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "8085"],
+      "port": 8085
+    },
+    {
+      "name": "GCS Static Dist",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "dist", "--bind", "0.0.0.0"],
+      "port": 8080
+    }
+  ]
+}
