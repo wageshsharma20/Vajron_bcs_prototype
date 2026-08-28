@@ -1,9 +1,10 @@
-import React, { useState, forwardRef, useImperativeHandle } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import React, { forwardRef, useImperativeHandle } from 'react';
+import { View, StyleSheet, Text, Image } from 'react-native';
 import { useTheme } from '../theme';
 import { Waypoint } from '../data/types';
 import { typography } from '../theme';
-import { MapPin } from 'lucide-react-native';
+import WaypointOverlay, { PlaceableWaypoint } from './WaypointOverlay';
+import { FLIGHT_WAYPOINTS, MAP_FRAME_ASPECT } from '../data/flightWaypoints';
 
 interface MapWaypointEditorProps {
   waypoints: Waypoint[];
@@ -17,6 +18,14 @@ export interface MapWaypointEditorRef {
   clearWaypoints: () => void;
 }
 
+/**
+ * The planner's map.
+ *
+ * The backdrop is the last frame of the flight-path recording, so the planner
+ * and Mission Control show the same ground at the same scale — the survey route
+ * is already drawn into it. Waypoints sit on top as an overlay, which keeps them
+ * selectable and lets an edited route diverge from the line baked into the still.
+ */
 const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProps>(
   ({ waypoints, onWaypointsChange, defaultAltitude = 30 }, ref) => {
     const { theme } = useTheme();
@@ -35,13 +44,42 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
       }
     }));
 
+    // Waypoints seeded from the mission keep their traced frame position; ones
+    // generated later only have coordinates and get projected by the overlay.
+    const placeable: PlaceableWaypoint[] = waypoints.map((wp, i) => {
+      const traced = FLIGHT_WAYPOINTS[i];
+      const isTraced = traced && traced.lat === wp.lat && traced.lng === wp.lng;
+      return isTraced ? traced : { id: i + 1, lat: wp.lat, lng: wp.lng };
+    });
+
     return (
       <View style={styles.container}>
-      {/* Mock Map Background */}
-      <View style={[styles.mapPlaceholder, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
-        <MapPin size={30} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
-        <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
-      </View>
+        {/* Locked to the source frame's ratio so the still and the markers share
+            one coordinate space; the slot around it just centres this. */}
+        <View style={[styles.frame, { borderColor: theme.hairline }]}>
+          {/* Sized explicitly rather than with absoluteFill: on web the Image
+              keeps its intrinsic 832x336 box under absoluteFill and simply gets
+              clipped by the frame, which slides the map under the markers. */}
+          <Image
+            source={require('../../assets/map-plan-still.png')}
+            style={styles.mapImage}
+            resizeMode="stretch"
+          />
+
+          <WaypointOverlay waypoints={placeable} size={18} showLabels />
+
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              SANJAY LAKE · {waypoints.length} WAYPOINT{waypoints.length === 1 ? '' : 'S'}
+            </Text>
+          </View>
+
+          {waypoints.length === 0 && (
+            <View style={styles.emptyHint} pointerEvents="none">
+              <Text style={styles.emptyText}>No waypoints — generate a survey grid to begin</Text>
+            </View>
+          )}
+        </View>
       </View>
     );
   }
@@ -50,30 +88,52 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  mapImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+  },
+  frame: {
+    width: '100%',
+    aspectRatio: MAP_FRAME_ASPECT,
+    maxHeight: '100%',
+    alignSelf: 'center',
     overflow: 'hidden',
-  },
-  markerBody: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFF',
-  },
-  markerText: {
-    color: '#FFF',
-    fontFamily: typography.fonts.bold,
-    fontSize: 15,
-  },
-  mapPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
-    
-  }
+    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: '#0E1512',
+  },
+  badge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontFamily: typography.fonts.bold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+  },
+  emptyHint: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10,10,10,0.45)',
+  },
+  emptyText: {
+    color: '#FFFFFF',
+    fontFamily: typography.fonts.medium,
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
 });
 
 export default MapWaypointEditor;

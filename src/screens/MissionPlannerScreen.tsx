@@ -6,6 +6,7 @@ import { typography } from '../theme';
 import MapWaypointEditor, { MapWaypointEditorRef } from '../components/MapWaypointEditor';
 import PreFlightChecklist from '../components/PreFlightChecklist';
 import { Waypoint, PreFlightCheck } from '../data/types';
+import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
 import { generateSurveyGrid } from '../data/missionUtils';
 
 export default function MissionPlannerScreen({ navigation }: any) {
@@ -13,7 +14,11 @@ export default function MissionPlannerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapWaypointEditorRef>(null);
 
-  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
+  // Seeded with the surveyed route so the planner opens on the mission the map
+  // still already shows, rather than an empty map the operator has to rebuild.
+  const [waypoints, setWaypoints] = useState<Waypoint[]>(() =>
+    FLIGHT_WAYPOINTS.map(({ lat, lng, altitude }) => ({ lat, lng, altitude })),
+  );
   const [altitude, setAltitude] = useState('30');
   const [speed, setSpeed] = useState('5');
   const [overlap, setOverlap] = useState('70');

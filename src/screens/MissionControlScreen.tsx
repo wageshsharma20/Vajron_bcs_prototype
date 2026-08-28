@@ -10,6 +10,11 @@ import { telemetryService } from '../services/telemetryService';
 import { useTelemetryStore } from '../data/useTelemetryStore';
 import TelemetryHUD from '../components/TelemetryHUD';
 import VideoFeedPlayer from '../components/VideoFeedPlayer';
+import MissionMapView from '../components/MissionMapView';
+import { useMissionPlayback } from '../hooks/useMissionPlayback';
+import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
+
+const TOTAL_WAYPOINTS = FLIGHT_WAYPOINTS.length;
 import GimbalControlPad from '../components/GimbalControlPad';
 import MissionProgressBar from '../components/MissionProgressBar';
 import { NotificationBanner } from '../components/NotificationBanner';
@@ -51,6 +56,19 @@ export default function MissionControlScreen({ route }: any) {
     });
     return unsubscribe;
   }, [droneId]);
+
+  // The camera feed and the map recording are the same sortie, so one hook owns
+  // both and keeps them aligned; take-off starts them and RTL rewinds them.
+  const isArmed = !!telemetry?.isArmed;
+  const { feedPlayer, mapPlayer } = useMissionPlayback(isArmed, isPaused);
+
+  // One progress figure for the whole screen. Taken from the accumulated flight
+  // path rather than the video clock so the map's waypoints and the progress bar
+  // below can never disagree, and so progress still advances if a browser
+  // refuses to autoplay the clips.
+  const missionFraction = Math.min(1, flightPath.length / 200);
+  const currentWaypoint = Math.floor(missionFraction * TOTAL_WAYPOINTS);
+  const missionProgress = isArmed ? missionFraction : undefined;
 
   const handlePauseToggle = () => {
     setIsPaused(!isPaused);
@@ -137,13 +155,12 @@ export default function MissionControlScreen({ route }: any) {
         <View style={styles.topRow}>
           <View style={styles.videoColumn}>
             <View style={styles.videoFeedWrapper}>
-              <VideoFeedPlayer telemetry={telemetry} />
+              <VideoFeedPlayer telemetry={telemetry} player={feedPlayer} isArmed={isArmed} />
             </View>
           </View>
           <View style={styles.mapColumn}>
-            <View style={[styles.mapContainerSquare, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
-              <MapPin size={30} color={theme.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
-              <Text style={{ fontFamily: typography.fonts.medium, color: theme.textSecondary, letterSpacing: 1, textTransform: 'uppercase', fontSize: typography.sizes.xs }}>Map View</Text>
+            <View style={styles.mapContainerSquare}>
+              <MissionMapView player={mapPlayer} isArmed={isArmed} progress={missionProgress} />
             </View>
           </View>
         </View>
@@ -164,7 +181,7 @@ export default function MissionControlScreen({ route }: any) {
             </View>
           </View>
           <View style={styles.progressWrapper}>
-            <MissionProgressBar totalWaypoints={20} currentWaypoint={Math.floor((flightPath.length / 200) * 20)} />
+            <MissionProgressBar totalWaypoints={TOTAL_WAYPOINTS} currentWaypoint={currentWaypoint} />
           </View>
         </View>
       </View>
@@ -238,11 +255,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   mapContainerSquare: {
+    // Border, radius and centring now live on MissionMapView, which fills this
+    // slot — keeping them here too would double the border and inset the frame
+    // the waypoint overlay is positioned against.
     flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   bottomSection: {
     paddingHorizontal: 16,
