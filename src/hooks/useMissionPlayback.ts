@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useVideoPlayer, VideoPlayer } from 'expo-video';
 
 /**
@@ -18,16 +18,28 @@ const MAP_PATH = require('../../assets/video/map-path.mp4');
 /** How far the map may drift from the feed before it is pulled back, in seconds. */
 const DRIFT_TOLERANCE_SEC = 0.35;
 const DRIFT_CHECK_MS = 1000;
+/** How often the feed reports its position, and so how often progress advances. */
+const TIME_UPDATE_INTERVAL_SEC = 0.25;
 
 export type MissionPlayback = {
   feedPlayer: VideoPlayer;
   mapPlayer: VideoPlayer;
+  /**
+   * How far through the sortie the recordings are, 0-1.
+   *
+   * This is the mission's real clock. The telemetry loop is a separate mock that
+   * cycles far faster than the flight it stands in for, so deriving progress
+   * from it finished the route in a fraction of the runtime and lit every
+   * waypoint while the aircraft was still visibly outbound.
+   */
+  progress: number;
 };
 
 export function useMissionPlayback(isArmed: boolean, isPaused: boolean): MissionPlayback {
   const feedPlayer = useVideoPlayer(LIVE_FEED, (p) => {
     p.loop = true;
     p.muted = true;
+    p.timeUpdateEventInterval = TIME_UPDATE_INTERVAL_SEC;
   });
   const mapPlayer = useVideoPlayer(MAP_PATH, (p) => {
     p.loop = true;
@@ -35,6 +47,17 @@ export function useMissionPlayback(isArmed: boolean, isPaused: boolean): Mission
   });
 
   const wasArmed = useRef(false);
+  const [progress, setProgress] = useState(0);
+
+  // The feed reports its own position; the map is slaved to it, so one listener
+  // is enough for both.
+  useEffect(() => {
+    const sub = feedPlayer.addListener('timeUpdate', ({ currentTime }) => {
+      const total = feedPlayer.duration;
+      if (total > 0) setProgress(Math.min(1, Math.max(0, currentTime / total)));
+    });
+    return () => sub.remove();
+  }, [feedPlayer]);
 
   useEffect(() => {
     const shouldPlay = isArmed && !isPaused;
@@ -46,6 +69,7 @@ export function useMissionPlayback(isArmed: boolean, isPaused: boolean): Mission
       mapPlayer.pause();
       feedPlayer.currentTime = 0;
       mapPlayer.currentTime = 0;
+      setProgress(0);
     }
     wasArmed.current = isArmed;
 
@@ -74,5 +98,5 @@ export function useMissionPlayback(isArmed: boolean, isPaused: boolean): Mission
     return () => clearInterval(id);
   }, [isArmed, isPaused, feedPlayer, mapPlayer]);
 
-  return { feedPlayer, mapPlayer };
+  return { feedPlayer, mapPlayer, progress };
 }

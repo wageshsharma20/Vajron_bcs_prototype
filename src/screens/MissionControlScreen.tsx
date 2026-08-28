@@ -60,14 +60,15 @@ export default function MissionControlScreen({ route }: any) {
   // The camera feed and the map recording are the same sortie, so one hook owns
   // both and keeps them aligned; take-off starts them and RTL rewinds them.
   const isArmed = !!telemetry?.isArmed;
-  const { feedPlayer, mapPlayer } = useMissionPlayback(isArmed, isPaused);
+  const { feedPlayer, mapPlayer, progress: missionFraction } = useMissionPlayback(isArmed, isPaused);
 
-  // One progress figure for the whole screen. Taken from the accumulated flight
-  // path rather than the video clock so the map's waypoints and the progress bar
-  // below can never disagree, and so progress still advances if a browser
-  // refuses to autoplay the clips.
-  const missionFraction = Math.min(1, flightPath.length / 200);
-  const currentWaypoint = Math.floor(missionFraction * TOTAL_WAYPOINTS);
+  // One progress figure for the whole screen, read off the recordings.
+  //
+  // It previously came from the telemetry path (flightPath.length / 200). That
+  // loop runs at 10 Hz, so it completed in about 20 seconds while the sortie it
+  // represents is 124 — the route finished and every waypoint lit while the
+  // aircraft was still visibly outbound on the feed.
+  const currentWaypoint = Math.round(missionFraction * TOTAL_WAYPOINTS);
   const missionProgress = isArmed ? missionFraction : undefined;
 
   const handlePauseToggle = () => {

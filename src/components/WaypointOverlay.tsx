@@ -42,7 +42,11 @@ export default function WaypointOverlay({
   progress,
 }: WaypointOverlayProps) {
   const { theme } = useTheme();
-  const reachedUpTo = progress === undefined ? -1 : progress * (waypoints.length - 1);
+  // Count reached the same way the progress bar labels it — Math.round of the
+  // fraction — so the markers lit and the "n / 20" beside them always match.
+  // Spacing them across length-1 instead left the final waypoint dark while the
+  // bar already read 20 / 20.
+  const reachedCount = progress === undefined ? 0 : Math.round(progress * waypoints.length);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -54,7 +58,7 @@ export default function WaypointOverlay({
             ? { nx: wp.nx, ny: wp.ny }
             : projectToFrame(wp.lat, wp.lng);
         if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return null;   // off this frame
-        const reached = progress !== undefined && i <= reachedUpTo;
+        const reached = progress !== undefined && i < reachedCount;
         const planned = progress === undefined;
         const fill = planned || reached ? theme.statusGreen : 'rgba(255,255,255,0.28)';
         const border = planned || reached ? '#FFFFFF' : 'rgba(255,255,255,0.75)';
