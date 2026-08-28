@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useId, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTheme, typography, statusShade, bandFor, StatusKey } from '../theme';
 
 type CircularScoreProps = {
@@ -45,7 +45,28 @@ export default function CircularScore({
   const arcLength = Math.PI * radius;
   const dashoffset = arcLength - (Math.max(0, Math.min(100, score)) / 100) * arcLength;
 
-  const color = propColor ?? statusShade(status ?? bandFor(score), score);
+  const band = status ?? bandFor(score);
+
+  // The arc is painted with a gradient rather than one flat tone, so it deepens
+  // as it sweeps: pale where it starts, deepest where a full reading would end.
+  // The band fixes the hue; the sweep carries the value. Because the gradient is
+  // anchored to the whole arc and progress only reveals part of it, a low reading
+  // stops while the colour is still light and a high one carries through to the
+  // deep end — so "further along is darker" falls out of the geometry instead of
+  // being a second rule applied on top.
+  //
+  // A LinearGradient interpolates along x, but the arc's angle does not: a point
+  // at arc progress t sits at x = cx - r*cos(pi*t), which bunches the two ends
+  // together. The stops are placed on that same cosine, so colour tracks the
+  // angle swept rather than the horizontal distance covered.
+  const gradientId = `score-${useId()}`;
+  const stops = useMemo(() => {
+    const STEPS = 12;
+    return Array.from({ length: STEPS + 1 }, (_, i) => {
+      const t = i / STEPS;
+      return { offset: (1 - Math.cos(Math.PI * t)) / 2, color: statusShade(band, t * 100) };
+    });
+  }, [band]);
 
   // Butt caps stop the stroke exactly at cy rather than half a stroke below it,
   // so the arc's true height is size/2; padding beyond that only pushes the
@@ -56,10 +77,24 @@ export default function CircularScore({
     <View style={styles.container}>
       <View style={{ width: size, height, alignItems: 'center' }}>
         <Svg width={size} height={height}>
+          <Defs>
+            <LinearGradient
+              id={gradientId}
+              x1={cx - radius}
+              y1={0}
+              x2={cx + radius}
+              y2={0}
+              gradientUnits="userSpaceOnUse"
+            >
+              {stops.map((st) => (
+                <Stop key={st.offset} offset={st.offset} stopColor={st.color} />
+              ))}
+            </LinearGradient>
+          </Defs>
           <Path d={arcPath} stroke={theme.surfaceMuted} strokeWidth={strokeWidth} fill="transparent" />
           <Path
             d={arcPath}
-            stroke={color}
+            stroke={propColor ?? `url(#${gradientId})`}
             strokeWidth={strokeWidth}
             fill="transparent"
             strokeDasharray={`${arcLength}`}

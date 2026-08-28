@@ -112,7 +112,9 @@ export type DesignTokens = {
  */
 export const STATUS_RAMPS = {
   green: ['#A8C4AC', '#5E8F6B', '#1E5233'],
-  amber: ['#DCC29B', '#B8863F', '#77490F'],
+  // Warmed off the previous #B8863F/#77490F, which sat far enough toward brown
+  // that a mid reading did not register as orange at all.
+  amber: ['#E4C3A0', '#C67B33', '#8A4512'],
   red: ['#D4A9A4', '#AE584E', '#75211A'],
 } as const;
 
