@@ -44,7 +44,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
         };
 
         let IconComponent = Grid;
-        let label = 'Fleet';
+        let label = route.name;
         if (route.name === 'FleetDashboard') {
           IconComponent = Grid;
           label = 'Fleet';
@@ -57,6 +57,21 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
         } else if (route.name === 'FleetMaintenance') {
           IconComponent = Wrench;
           label = 'Service';
+        } else if (route.name === 'LayoutA') {
+          IconComponent = Radio;
+          label = 'Lay A';
+        } else if (route.name === 'LayoutB') {
+          IconComponent = Radio;
+          label = 'Lay B';
+        } else if (route.name === 'LayoutC') {
+          IconComponent = Radio;
+          label = 'Lay C';
+        } else if (route.name === 'LayoutD') {
+          IconComponent = Radio;
+          label = 'Lay D';
+        } else if (route.name === 'LayoutE') {
+          IconComponent = Radio;
+          label = 'Lay E';
         }
 
         const color = isFocused ? theme.onBrand : theme.onBrandMuted;
@@ -142,7 +157,6 @@ const styles = StyleSheet.create({
     right: -4,
     width: 7,
     height: 7,
-    borderRadius: 4,
     borderWidth: 1.5,
   },
 });

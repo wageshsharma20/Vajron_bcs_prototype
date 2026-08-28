@@ -28,7 +28,7 @@ function timeAgo(isoString: string) {
 }
 
 export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStatusCardProps) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
 
   const getStatusColor = () => {
     switch (drone.status) {
@@ -43,17 +43,25 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
   const statusColor = getStatusColor();
 
   return (
-    <TouchableOpacity style={[styles.container, { borderBottomColor: theme.hairline }]} onPress={onPress}>
+    <TouchableOpacity
+      style={[
+        styles.container,
+        { borderBottomColor: theme.hairline, borderBottomWidth: tokens.rule.hair, paddingVertical: sp(18) },
+      ]}
+      onPress={onPress}
+    >
+      {/* The status marker hangs in the gutter as a rule rather than sitting
+          inline as a dot, so the row's text keeps one unbroken left edge and
+          the marker still reads down the list as a column of its own. */}
+      <View style={[styles.marker, { backgroundColor: statusColor }]} />
+
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <View style={[styles.dot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.title, { color: theme.textPrimary }]}>{drone.id}</Text>
-        </View>
-        
+        <Text style={[styles.title, { color: theme.textPrimary }]}>{drone.id}</Text>
+
         {/* Static. The in-flight badge used to pulse, which is decorative motion
             on a status an operator reads rather than an alert. */}
         {drone.status === 'in-flight' ? (
-          <View style={[styles.badge, { backgroundColor: theme.surfaceMuted, borderLeftWidth: 2, borderLeftColor: theme.statusGreen }]}>
+          <View style={[styles.badge, { backgroundColor: theme.surfaceMuted, borderLeftWidth: tokens.rule.medium, borderLeftColor: theme.statusGreen }]}>
             <Text style={[styles.badgeText, { color: theme.textPrimary }]}>IN FLIGHT</Text>
           </View>
         ) : (
@@ -96,24 +104,23 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    // Rows carry no background and no outline; the hairline beneath and the air
+    // above and below are the whole separation.
+    position: 'relative',
+  },
+  marker: {
+    position: 'absolute',
+    // Sits outside the text column, in the page gutter.
+    left: -12,
+    top: 20,
+    width: 3,
+    height: 14,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
+    marginBottom: 5,
   },
   title: {
     fontFamily: typography.fonts.bold,
@@ -121,9 +128,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   badgeText: {
     fontFamily: typography.fonts.bold,
@@ -133,7 +139,7 @@ const styles = StyleSheet.create({
   model: {
     fontFamily: typography.fonts.regular,
     fontSize: typography.sizes.sm,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   metricsRow: {
     flexDirection: 'row',

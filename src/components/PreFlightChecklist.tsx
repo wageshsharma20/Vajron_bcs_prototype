@@ -11,7 +11,7 @@ interface PreFlightChecklistProps {
 }
 
 export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled: externalDisabled }: PreFlightChecklistProps) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
 
   const internalDisabled = checks.some(c => c.blocker && (c.status === 'fail' || c.status === 'checking'));
   const isLaunchDisabled = externalDisabled || internalDisabled;
@@ -38,9 +38,15 @@ export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled:
   return (
     <View style={styles.container}>
       
-      <View style={styles.list}>
+      <View style={[styles.list, { marginBottom: sp(20) }]}>
         {checks.map(check => (
-          <View key={check.id} style={[styles.checkRow, { borderBottomColor: theme.hairline }]}>
+          <View
+            key={check.id}
+            style={[
+              styles.checkRow,
+              { borderBottomColor: theme.hairline, borderBottomWidth: tokens.rule.hair, paddingVertical: sp(14) },
+            ]}
+          >
             <View style={styles.statusBadgeContainer}>
               <Text style={[styles.statusBadge, { color: getStatusColor(check.status) }]}>
                 [{getStatusIcon(check.status)}]
@@ -57,7 +63,7 @@ export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled:
           styles.launchButton, 
           // Primary action takes the brand, not the warning colour — amber here
           // read as a caution on the one control meant to look affirmative.
-          { backgroundColor: isLaunchDisabled ? theme.surfaceMuted : theme.brand }
+          { backgroundColor: isLaunchDisabled ? theme.surfaceMuted : theme.brand, paddingVertical: sp(17) }
         ]} 
         disabled={isLaunchDisabled}
         onPress={onLaunch}
@@ -83,8 +89,6 @@ const styles = StyleSheet.create({
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   statusBadgeContainer: {
     width: 90,
@@ -104,8 +108,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   launchButton: {
-    paddingVertical: 16,
-    borderRadius: 8,
     alignItems: 'center',
   },
   launchText: {

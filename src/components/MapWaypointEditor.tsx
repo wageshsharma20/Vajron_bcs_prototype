@@ -88,7 +88,10 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    // Top-aligned, not centred: the map is the left column of a two-column page,
+    // so its first edge should start on the same line as the sidebar's first
+    // field rather than floating in the middle of its half.
+    justifyContent: 'flex-start',
   },
   mapImage: {
     position: 'absolute',
@@ -103,17 +106,17 @@ const styles = StyleSheet.create({
     maxHeight: '100%',
     alignSelf: 'center',
     overflow: 'hidden',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     backgroundColor: '#0E1512',
   },
   badge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 4,
+    // Flush into the frame's corner as a plate rather than floating inset: the
+    // frame's own edge does the containing, so the label needs no second one.
+    top: 0,
+    left: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
   badgeText: {

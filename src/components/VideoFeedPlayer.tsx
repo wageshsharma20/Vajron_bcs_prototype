@@ -79,7 +79,6 @@ const styles = StyleSheet.create({
     maxHeight: '100%',
     alignSelf: 'center',
     overflow: 'hidden',
-    borderRadius: 8,
   },
   standbyVeil: {
     ...StyleSheet.absoluteFill,
@@ -100,9 +99,10 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   overlay: {
+    // Flush into the frame's corner, matching the map's corner plate.
     position: 'absolute',
     bottom: 8,
-    left: 8,
+    left: 10,
   },
   liveRow: {
     flexDirection: 'row',

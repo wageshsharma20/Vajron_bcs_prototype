@@ -26,7 +26,7 @@ export default function ConfirmActionDialog({
 
   return (
     <Portal>
-      <Dialog visible={visible} onDismiss={onCancel} style={{ backgroundColor: theme.background, borderRadius: 8 }}>
+      <Dialog visible={visible} onDismiss={onCancel} style={{ backgroundColor: theme.background, borderRadius: 0 }}>
         <Dialog.Title style={[styles.title, { color: theme.textPrimary }]}>{title}</Dialog.Title>
         <Dialog.Content>
           <Text style={[styles.message, { color: theme.textSecondary }]}>{message}</Text>
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   confirmBtn: {
-    borderRadius: 6,
+    borderRadius: 0,
     marginLeft: 8,
   },
   buttonLabel: {

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../theme';
 import { TelemetryFrame } from '../data/types';
@@ -9,53 +9,69 @@ interface TelemetryHUDProps {
   isGrid?: boolean;
 }
 
-// Renders one numeric value and its unit. Static: the readings update on their
-// own cadence and do not need motion to be noticed.
-function AnimatedNumber({ value, suffix, isGrid }: { value: string | number, suffix: string, isGrid?: boolean }) {
+/**
+ * Renders one numeric value and its unit. Static: the readings update on their
+ * own cadence and do not need motion to be noticed.
+ */
+function Reading({ value, suffix, isGrid }: { value: string | number; suffix: string; isGrid?: boolean }) {
   const { theme } = useTheme();
-  
+
   return (
-    <View style={styles.metricCell}>
-      <View style={styles.valueRow}>
-        <Text style={[styles.valueText, isGrid && styles.gridValueText, { color: theme.textPrimary }]}>{value}</Text>
-        <Text style={[styles.suffixText, isGrid && styles.gridSuffixText, { color: theme.textSecondary }]}>{suffix}</Text>
-      </View>
+    <View style={styles.valueRow}>
+      <Text style={[styles.valueText, isGrid && styles.gridValueText, { color: theme.textPrimary }]}>{value}</Text>
+      <Text style={[styles.suffixText, isGrid && styles.gridSuffixText, { color: theme.textSecondary }]}>{suffix}</Text>
     </View>
   );
 }
 
+const COLUMNS = 3;
+
+/**
+ * The six flight readings.
+ *
+ * In grid form they are ruled into a table rather than spaced apart: six
+ * free-floating figures make the reader work out which label belongs to which
+ * number, whereas cells divided by hairlines are read down a column without
+ * effort. The rules only run between cells, never around the outside — an outer
+ * box would make the table a card sitting on the page instead of part of it.
+ */
 export default function TelemetryHUD({ telemetry, isGrid = false }: TelemetryHUDProps) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
 
   if (!telemetry) return <View style={[styles.container, { backgroundColor: theme.surface }]}><Text>No Telemetry</Text></View>;
+
+  const readings = [
+    { label: 'ALT', value: Math.round(telemetry.altitude), suffix: 'm' },
+    { label: 'SPD', value: telemetry.groundSpeed.toFixed(1), suffix: 'm/s' },
+    { label: 'BAT', value: Math.round(telemetry.batteryPercent), suffix: '%' },
+    { label: 'SIG', value: Math.round(telemetry.signalStrength), suffix: '%' },
+    { label: 'DIST', value: Math.round(telemetry.distanceToHome), suffix: 'm' },
+    { label: 'SATS', value: telemetry.gpsSatsVisible, suffix: '' },
+  ];
 
   return (
     <View style={[styles.container, isGrid && styles.gridContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
       <View style={[styles.row, isGrid && styles.gridRow]}>
-        <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>ALT</Text>
-          <AnimatedNumber value={Math.round(telemetry.altitude)} suffix="m" isGrid={isGrid} />
-        </View>
-        <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>SPD</Text>
-          <AnimatedNumber value={telemetry.groundSpeed.toFixed(1)} suffix="m/s" isGrid={isGrid} />
-        </View>
-        <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>BAT</Text>
-          <AnimatedNumber value={Math.round(telemetry.batteryPercent)} suffix="%" isGrid={isGrid} />
-        </View>
-        <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>SIG</Text>
-          <AnimatedNumber value={Math.round(telemetry.signalStrength)} suffix="%" isGrid={isGrid} />
-        </View>
-        <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>DIST</Text>
-          <AnimatedNumber value={Math.round(telemetry.distanceToHome)} suffix="m" isGrid={isGrid} />
-        </View>
-        <View style={[styles.cellWrapper, isGrid && styles.gridCell]}>
-          <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>SATS</Text>
-          <AnimatedNumber value={telemetry.gpsSatsVisible} suffix="" isGrid={isGrid} />
-        </View>
+        {readings.map((r, i) => (
+          <View
+            key={r.label}
+            style={[
+              styles.cellWrapper,
+              isGrid && styles.gridCell,
+              isGrid && {
+                borderColor: theme.hairline,
+                borderLeftWidth: i % COLUMNS === 0 ? 0 : tokens.rule.hair,
+                borderTopWidth: i < COLUMNS ? 0 : tokens.rule.hair,
+                paddingLeft: i % COLUMNS === 0 ? 0 : sp(14),
+                paddingRight: sp(14),
+                paddingVertical: sp(10),
+              },
+            ]}
+          >
+            <Text style={[styles.label, isGrid && styles.gridLabel, { color: theme.textSecondary }]}>{r.label}</Text>
+            <Reading value={r.value} suffix={r.suffix} isGrid={isGrid} />
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -85,9 +101,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gridCell: {
+    // Three even columns; COLUMNS above is what decides where the rules fall.
     width: '33.33%',
     alignItems: 'flex-start',
-    marginBottom: 8,
   },
   label: {
     fontFamily: typography.fonts.bold,
@@ -96,10 +112,7 @@ const styles = StyleSheet.create({
   },
   gridLabel: {
     fontSize: 14,
-    marginBottom: 0,
-  },
-  metricCell: {
-    alignItems: 'center',
+    marginBottom: 2,
   },
   valueRow: {
     flexDirection: 'row',

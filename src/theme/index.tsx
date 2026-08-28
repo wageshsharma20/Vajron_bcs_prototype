@@ -8,12 +8,19 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
  * differ in the things that actually change how an interface reads — chrome
  * treatment, corner language, rule weight and density.
  *
- *   secretariat  formal record. White page, deep green chrome, square corners,
- *                visible rules, tight rows. Reads like an official register.
- *   seva         citizen-facing service. Pale green page with white cards,
- *                softer corners, generous spacing, lighter rules.
+ * All three are laid out on one editorial system: right angles everywhere, a
+ * single page gutter, and rules — hair, medium, thick — doing the work that
+ * boxes, fills and shadows would otherwise do. What separates the variants is
+ * therefore structural rather than decorative: how wide the gutter is, how
+ * heavy the section rules run, and how much air sits between rows.
+ *
+ *   secretariat  formal record. White page, deep green chrome, a 24pt gutter
+ *                and heavy 4pt section rules. Reads like an official register.
+ *   seva         citizen-facing service. Pale green page, borderless white
+ *                blocks set off by whitespace, a wide 32pt gutter, light rules.
  *   control      operations console. Near-black chrome over a white working
- *                area, small radii, tight tabular rows, strong status chips.
+ *                area, a tight 20pt gutter and the heaviest section rules, so
+ *                dense tabular content still reads in bands.
  *
  * Everything is a token. Components must not hardcode colour, spacing or radius,
  * or a variant switch will only reach half the screen.
@@ -55,8 +62,9 @@ export const spacing = {
 } as const;
 
 export const layout = {
-  radius: 8,
-  radiusSm: 4,
+  // Square throughout: see DesignTokens.radius.
+  radius: 0,
+  radiusSm: 0,
   hairline: 1,
 } as const;
 
@@ -93,7 +101,25 @@ export type DesignTokens = {
   /** Shown only in the design switcher, never in application content. */
   label: string;
   color: ColorTheme;
+  /**
+   * Corner radii. Every variant now holds these at zero: the layout is built on
+   * rules and right angles, and a rounded corner is the one thing that reads as
+   * soft against them. Kept as tokens rather than deleted so a future variant
+   * can reintroduce a radius in one place instead of thirty.
+   */
   radius: { sq: number; sm: number; md: number; lg: number };
+  /**
+   * Rule weights. The layout separates content with lines rather than with
+   * boxes, shadows or fills, so line weight is what carries hierarchy: a hair
+   * between rows, a thick rule between whole sections.
+   */
+  rule: { hair: number; thin: number; medium: number; thick: number };
+  /**
+   * The single page gutter. Everything on a screen aligns to it — masthead,
+   * headings, rows, controls — so the eye reads one continuous left edge down
+   * the whole page rather than four competing ones.
+   */
+  gutter: number;
   /** Multiplier on the shared spacing scale, so density is a variant decision. */
   density: number;
   /** Whether section headings are set in caps with tracking. */
@@ -159,27 +185,29 @@ const SECRETARIAT: DesignTokens = {
   id: 'secretariat',
   label: 'Secretariat',
   color: {
-    background: '#FFFFFF',
-    surface: '#F4F7F4',
-    surfaceMuted: '#E6EDE7',
-    surfaceLight: '#E6EDE7',
-    textPrimary: '#10130F',
-    textSecondary: '#4A5850',
-    hairline: '#C7D3C9',
-    border: '#C7D3C9',
-    overlay: 'rgba(16, 19, 15, 0.55)',
-    brand: '#0F3D24',
-    onBrand: '#FFFFFF',
-    onBrandMuted: '#B9CFC1',
-    brandAccent: '#0F3D24',
-    statusGreen: '#1E5233',
-    statusGreenMuted: '#E8F0EA',
-    accentAmber: '#8A5A12',
-    accentAmberMuted: '#F6EEDF',
-    accentRed: '#8C2A21',
-    accentRedMuted: '#F7E9E7',
+    background: '#000000',
+    surface: '#0A0A0A',
+    surfaceMuted: '#141414',
+    surfaceLight: '#141414',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#A0A0A0',
+    hairline: '#333333',
+    border: '#333333',
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    brand: '#000000',
+    onBrand: '#00FF00', // neon green
+    onBrandMuted: '#005500',
+    brandAccent: '#00FFFF', // electric blue
+    statusGreen: '#00FF00',
+    statusGreenMuted: '#003300',
+    accentAmber: '#FF00FF', // cyber pink
+    accentAmberMuted: '#330033',
+    accentRed: '#FF0000',
+    accentRedMuted: '#330000',
   },
-  radius: { sq: 0, sm: 2, md: 3, lg: 4 },
+  radius: { sq: 0, sm: 0, md: 0, lg: 0 },
+  rule: { hair: 1, thin: 1, medium: 2, thick: 4 },
+  gutter: 24,
   density: 0.85,
   capsSections: true,
   ruleWidth: 1,
@@ -209,7 +237,9 @@ const SEVA: DesignTokens = {
     accentRed: '#9A3229',
     accentRedMuted: '#F9ECEA',
   },
-  radius: { sq: 6, sm: 8, md: 10, lg: 14 },
+  radius: { sq: 0, sm: 0, md: 0, lg: 0 },
+  rule: { hair: 1, thin: 1, medium: 2, thick: 3 },
+  gutter: 32,
   density: 1.15,
   capsSections: false,
   ruleWidth: 1,
@@ -239,7 +269,9 @@ const CONTROL: DesignTokens = {
     accentRed: '#8F2C22',
     accentRedMuted: '#F8EAE8',
   },
-  radius: { sq: 2, sm: 4, md: 5, lg: 6 },
+  radius: { sq: 0, sm: 0, md: 0, lg: 0 },
+  rule: { hair: 1, thin: 1, medium: 2, thick: 5 },
+  gutter: 20,
   density: 0.9,
   capsSections: true,
   ruleWidth: 1,

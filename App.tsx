@@ -17,6 +17,12 @@ import { lightTheme, ThemeProvider, useTheme } from './src/theme';
 import DesignVariantSwitcher from './src/components/DesignVariantSwitcher';
 import CustomTabBar from './src/components/CustomTabBar';
 
+
+import MissionControlScreen_LayoutA from './src/screens/MissionControlScreen_LayoutA';
+import MissionControlScreen_LayoutB from './src/screens/MissionControlScreen_LayoutB';
+import MissionControlScreen_LayoutC from './src/screens/MissionControlScreen_LayoutC';
+import MissionControlScreen_LayoutD from './src/screens/MissionControlScreen_LayoutD';
+import MissionControlScreen_LayoutE from './src/screens/MissionControlScreen_LayoutE';
 import FleetDashboardScreen from './src/screens/FleetDashboardScreen';
 import MissionPlannerScreen from './src/screens/MissionPlannerScreen';
 import MissionControlScreen from './src/screens/MissionControlScreen';
@@ -136,7 +142,14 @@ function AppShell() {
           >
             <Tab.Screen name="FleetDashboard" component={FleetDashboardScreen} />
             <Tab.Screen name="MissionPlanner" component={MissionPlannerScreen} />
+            
             <Tab.Screen name="MissionControl" component={MissionControlScreen} />
+            <Tab.Screen name="LayoutA" component={MissionControlScreen_LayoutA} />
+            <Tab.Screen name="LayoutB" component={MissionControlScreen_LayoutB} />
+            <Tab.Screen name="LayoutC" component={MissionControlScreen_LayoutC} />
+            <Tab.Screen name="LayoutD" component={MissionControlScreen_LayoutD} />
+            <Tab.Screen name="LayoutE" component={MissionControlScreen_LayoutE} />
+
             <Tab.Screen name="FleetMaintenance" component={FleetMaintenanceScreen} />
           </Tab.Navigator>
         </NavigationContainer>

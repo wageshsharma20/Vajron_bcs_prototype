@@ -6,12 +6,12 @@ import { typography } from '../theme';
 import MapWaypointEditor, { MapWaypointEditorRef } from '../components/MapWaypointEditor';
 import PreFlightChecklist from '../components/PreFlightChecklist';
 import { Waypoint, PreFlightCheck } from '../data/types';
-import { PageHeader, useHeaderColors } from '../components/Chrome';
+import { PageHeader, useHeaderColors, Rule } from '../components/Chrome';
 import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
 import { generateSurveyGrid } from '../data/missionUtils';
 
 export default function MissionPlannerScreen({ navigation }: any) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const headerColors = useHeaderColors();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapWaypointEditorRef>(null);
@@ -61,7 +61,7 @@ export default function MissionPlannerScreen({ navigation }: any) {
       />
 
       <View style={styles.contentRow}>
-        <View style={styles.mapContainer}>
+        <View style={[styles.mapContainer, { padding: tokens.gutter }]}>
           <MapWaypointEditor 
             ref={mapRef}
             waypoints={waypoints}
@@ -77,21 +77,36 @@ export default function MissionPlannerScreen({ navigation }: any) {
         </View>
 
         {/* Sidebar */}
-        <View style={[styles.sidebar, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 60, borderLeftColor: theme.hairline }]}>
-          <View style={styles.paramsRow}>
-            <View style={styles.paramInputGroup}>
+        <View
+          style={[
+            styles.sidebar,
+            {
+              backgroundColor: theme.surface,
+              paddingHorizontal: tokens.gutter,
+              paddingTop: tokens.gutter,
+              paddingBottom: insets.bottom + 60,
+              borderLeftColor: theme.hairline,
+              borderLeftWidth: tokens.rule.hair,
+            },
+          ]}
+        >
+          {/* Fields are ruled underneath rather than boxed: a full outline round
+              a three-character number is more frame than content, and three of
+              them in a row read as three buttons. The rule is the field. */}
+          <View style={[styles.paramsRow, { marginBottom: sp(20) }]}>
+            <View style={[styles.paramInputGroup, { marginRight: sp(20) }]}>
               <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>ALT (m)</Text>
               <TextInput 
-                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
+                style={[styles.paramInput, { color: theme.textPrimary, borderBottomColor: theme.textPrimary, borderBottomWidth: tokens.rule.medium }]}
                 value={altitude}
                 onChangeText={setAltitude}
                 keyboardType="numeric"
               />
             </View>
-            <View style={styles.paramInputGroup}>
+            <View style={[styles.paramInputGroup, { marginRight: sp(20) }]}>
               <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>SPD (m/s)</Text>
               <TextInput 
-                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
+                style={[styles.paramInput, { color: theme.textPrimary, borderBottomColor: theme.textPrimary, borderBottomWidth: tokens.rule.medium }]}
                 value={speed}
                 onChangeText={setSpeed}
                 keyboardType="numeric"
@@ -100,7 +115,7 @@ export default function MissionPlannerScreen({ navigation }: any) {
             <View style={styles.paramInputGroup}>
               <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>OVERLAP %</Text>
               <TextInput 
-                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
+                style={[styles.paramInput, { color: theme.textPrimary, borderBottomColor: theme.textPrimary, borderBottomWidth: tokens.rule.medium }]}
                 value={overlap}
                 onChangeText={setOverlap}
                 keyboardType="numeric"
@@ -108,14 +123,19 @@ export default function MissionPlannerScreen({ navigation }: any) {
             </View>
           </View>
 
-          <View style={styles.actionRowSecondary}>
+          <View style={[styles.actionRowSecondary, { marginBottom: sp(4) }]}>
             <TouchableOpacity onPress={() => mapRef.current?.clearWaypoints()} style={styles.textLinkBtn}>
               <Text style={[styles.textLink, { color: theme.textSecondary }]}>Clear Map</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.secondaryBtn, { borderColor: theme.hairline }]} onPress={handleSurveyGrid}>
+            <TouchableOpacity
+              style={[styles.secondaryBtn, { borderColor: theme.textPrimary, borderWidth: tokens.rule.medium, paddingVertical: sp(11), paddingHorizontal: sp(20) }]}
+              onPress={handleSurveyGrid}
+            >
               <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
             </TouchableOpacity>
           </View>
+
+          <Rule weight="medium" style={{ marginTop: sp(12) }} />
 
           <View style={styles.checklistContainer}>
             <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} isLaunchDisabled={waypoints.length === 0} />
@@ -132,17 +152,6 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FFFFFF',
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerTitle: {
-    fontFamily: typography.fonts.light,
-    fontSize: 31,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
   headerSubtitle: {
     fontFamily: typography.fonts.medium,
     fontSize: typography.sizes.sm,
@@ -155,7 +164,6 @@ const styles = StyleSheet.create({
   mapContainer: {
     width: '50%',
     position: 'relative',
-    padding: 20,
   },
   checklistOverlay: {
     position: 'absolute',
@@ -165,43 +173,35 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: '50%',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    borderLeftWidth: StyleSheet.hairlineWidth,
   },
   paramsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
   },
   paramInputGroup: {
     flex: 1,
-    marginHorizontal: 4,
   },
   paramLabel: {
     fontFamily: typography.fonts.bold,
     fontSize: 18,
-    marginBottom: 4,
-    textAlign: 'center',
+    marginBottom: 6,
   },
   paramInput: {
-    borderWidth: 1,
-    borderRadius: 4,
     paddingVertical: 6,
-    textAlign: 'center',
     fontFamily: typography.fonts.medium,
     fontSize: typography.sizes.sm,
     fontVariant: typography.tabularNums,
-  },
+    outlineStyle: 'none',
+  } as any,
   actionRowSecondary: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
   textLinkBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    // Flush to the sidebar gutter, so the link starts on the same edge as the
+    // field labels above it rather than eight points inside them.
+    paddingRight: 8,
   },
   textLink: {
     fontFamily: typography.fonts.medium,
@@ -209,10 +209,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   secondaryBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
     alignItems: 'center',
   },
   secondaryBtnText: {
@@ -221,6 +217,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   checklistContainer: {
-    marginTop: 8,
+    marginTop: 4,
   }
 });

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useTheme } from '../theme';
-import { PageHeader } from '../components/Chrome';
+import { PageHeader, SectionHeading, Rule } from '../components/Chrome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
 import InspectionAccordion from '../components/InspectionAccordion';
 import { mockDrones } from '../data/mockFleetData';
 
 export default function FleetMaintenanceScreen() {
-  const { theme, tokens } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const insets = useSafeAreaInsets();
   const [selectedDrone, setSelectedDrone] = useState(mockDrones[0]);
 
@@ -36,16 +36,31 @@ export default function FleetMaintenanceScreen() {
       <PageHeader title="FLEET MAINTENANCE" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Drone Selector Mock */}
-        <View style={styles.selectorRow}>
-          {mockDrones.map(drone => (
+        {/* One segmented control rather than four detached chips: the shared
+            edges say these are the alternatives to a single choice, and there
+            is no gap left over to read as spacing between unrelated buttons. */}
+        <View
+          style={[
+            styles.selectorRow,
+            {
+              marginHorizontal: tokens.gutter,
+              marginTop: sp(20),
+              marginBottom: sp(24),
+              borderWidth: tokens.rule.thin,
+              borderColor: theme.textPrimary,
+            },
+          ]}
+        >
+          {mockDrones.map((drone, i) => (
             <TouchableOpacity 
               key={drone.id} 
               style={[
                 styles.selectorBtn, 
                 { 
-                  backgroundColor: selectedDrone.id === drone.id ? theme.brand : theme.surface,
-                  borderColor: theme.hairline 
+                  backgroundColor: selectedDrone.id === drone.id ? theme.brand : theme.background,
+                  borderLeftWidth: i === 0 ? 0 : tokens.rule.thin,
+                  borderLeftColor: theme.textPrimary,
+                  paddingVertical: sp(12),
                 }
               ]}
               onPress={() => setSelectedDrone(drone)}
@@ -83,21 +98,39 @@ export default function FleetMaintenanceScreen() {
           }}
         />
 
-        <View style={[styles.supplementaryModule, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
-          <Text style={[styles.suppTitle, { color: theme.textSecondary }]}>SERVICE SCHEDULE</Text>
-          <View style={styles.suppRow}>
+        {/* Was a filled, outlined box floating inside the page. It holds the
+            same two rows as the accordions above it, so it now reads the same
+            way: a heading, a rule, and rows on the gutter. */}
+        <SectionHeading>SERVICE SCHEDULE</SectionHeading>
+        <View style={{ paddingHorizontal: tokens.gutter }}>
+          <View style={[styles.suppRow, { paddingVertical: sp(14) }]}>
             <Text style={[styles.suppLabel, { color: theme.textPrimary }]}>Next Required Service</Text>
             <Text style={[styles.suppValue, { color: theme.textPrimary }]}>in 42 flight hours</Text>
           </View>
-          <View style={[styles.suppRow, { marginTop: 8 }]}>
+          <Rule />
+          <View style={[styles.suppRow, { paddingVertical: sp(14) }]}>
             <Text style={[styles.suppLabel, { color: theme.textSecondary }]}>Firmware Version</Text>
             <Text style={[styles.suppValue, { color: theme.textSecondary }]}>v2.4.1 (Up to date)</Text>
           </View>
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 16, borderTopColor: theme.hairline }]}>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.brand, borderRadius: tokens.radius.sm }]}>
+      {/* The action bar is closed off by a thick rule, the heaviest line on the
+          page, so the standing control never reads as another content row. */}
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: theme.background,
+            paddingHorizontal: tokens.gutter,
+            paddingTop: sp(16),
+            paddingBottom: insets.bottom + sp(16),
+            borderTopColor: theme.textPrimary,
+            borderTopWidth: tokens.rule.thick,
+          },
+        ]}
+      >
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.brand, paddingVertical: sp(17) }]}>
           <Text style={[styles.actionBtnText, { color: theme.onBrand }]}>SCHEDULE SERVICE</Text>
         </TouchableOpacity>
       </View>
@@ -111,33 +144,16 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FFFFFF',
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerTitle: {
-    fontFamily: typography.fonts.light,
-    fontSize: 31,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
   scrollContent: {
-    paddingBottom: 80,
+    paddingBottom: 110,
   },
   selectorRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    flexWrap: 'wrap',
   },
   selectorBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    marginRight: 8,
-    marginBottom: 8,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   selectorText: {
     fontFamily: typography.fonts.bold,
@@ -148,32 +164,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   actionBtn: {
-    paddingVertical: 16,
-    borderRadius: 8,
     alignItems: 'center',
   },
   actionBtnText: {
     fontFamily: typography.fonts.bold,
     fontSize: typography.sizes.base,
     letterSpacing: 1,
-  },
-  supplementaryModule: {
-    marginHorizontal: 20,
-    marginVertical: 16,
-    padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-  },
-  suppTitle: {
-    fontFamily: typography.fonts.semiBold,
-    fontSize: 18,
-    letterSpacing: 1,
-    marginBottom: 12,
   },
   suppRow: {
     flexDirection: 'row',

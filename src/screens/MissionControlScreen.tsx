@@ -13,7 +13,7 @@ import VideoFeedPlayer from '../components/VideoFeedPlayer';
 import MissionMapView from '../components/MissionMapView';
 import { useMissionPlayback } from '../hooks/useMissionPlayback';
 import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
-import { PageHeader, useHeaderColors } from '../components/Chrome';
+import { PageHeader, useHeaderColors, Rule } from '../components/Chrome';
 
 const TOTAL_WAYPOINTS = FLIGHT_WAYPOINTS.length;
 import GimbalControlPad from '../components/GimbalControlPad';
@@ -23,7 +23,7 @@ import { DroneAlert, TelemetryFrame } from '../data/types';
 
 export default function MissionControlScreen({ route }: any) {
   const droneId = route.params?.droneId || 'DRONE-01'; // Fallback for direct tab click
-  const { theme, tokens } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const headerColors = useHeaderColors();
   const insets = useSafeAreaInsets();
   
@@ -93,20 +93,34 @@ export default function MissionControlScreen({ route }: any) {
         }
       />
 
-      <View style={[styles.commandStrip, { borderBottomColor: theme.hairline, backgroundColor: theme.surface }]}>
+      {/* The command bar is its own band, closed by a medium rule: it holds the
+          only controls on the screen that commit anything, so it must not read
+          as the top of the picture below it. */}
+      <View
+        style={[
+          styles.commandStrip,
+          {
+            borderBottomColor: theme.textPrimary,
+            borderBottomWidth: tokens.rule.medium,
+            backgroundColor: theme.surface,
+            paddingHorizontal: tokens.gutter,
+            paddingVertical: sp(12),
+          },
+        ]}
+      >
         <View style={styles.actionsRow}>
           {!telemetry?.isArmed ? (
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.statusGreen, borderRadius: tokens.radius.sm, paddingHorizontal: 16 }]} onPress={() => setTakeOffDialogVisible(true)}>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.statusGreen, paddingHorizontal: sp(22), paddingVertical: sp(11) }]} onPress={() => setTakeOffDialogVisible(true)}>
               <UploadCloud size={22} color="#FFFFFF" />
               <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>TAKE OFF</Text>
             </TouchableOpacity>
           ) : (
             <>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted, borderRadius: tokens.radius.sm, paddingHorizontal: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.hairline }]} onPress={handlePauseToggle}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted, paddingHorizontal: sp(22), paddingVertical: sp(11), borderWidth: tokens.rule.hair, borderColor: theme.hairline }]} onPress={handlePauseToggle}>
                 {isPaused ? <Play size={22} color={theme.accentAmber} /> : <Pause size={22} color={theme.accentAmber} />}
                 <Text style={[styles.actionBtnText, { color: theme.accentAmber, marginLeft: 6 }]}>{isPaused ? 'RESUME' : 'PAUSE'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, borderRadius: tokens.radius.sm, paddingHorizontal: 16 }]} onPress={() => setRtlDialogVisible(true)}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, paddingHorizontal: sp(22), paddingVertical: sp(11) }]} onPress={() => setRtlDialogVisible(true)}>
                 <DownloadCloud size={22} color="#FFFFFF" />
                 <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>RTL</Text>
               </TouchableOpacity>
@@ -136,8 +150,8 @@ export default function MissionControlScreen({ route }: any) {
 
       <View style={styles.mainContent}>
         {/* Top Section: Video (Left) + Map (Right) */}
-        <View style={styles.topRow}>
-          <View style={styles.videoColumn}>
+        <View style={[styles.topRow, { padding: tokens.gutter }]}>
+          <View style={[styles.videoColumn, { paddingRight: tokens.gutter }]}>
             <View style={styles.videoFeedWrapper}>
               <VideoFeedPlayer telemetry={telemetry} player={feedPlayer} isArmed={isArmed} />
             </View>
@@ -149,13 +163,21 @@ export default function MissionControlScreen({ route }: any) {
           </View>
         </View>
 
+        {/* A thick rule divides what the aircraft is seeing from what it is
+            reporting. It is the strongest line on the screen because that is the
+            biggest change of subject on it. */}
+        <Rule weight="thick" color={theme.textPrimary} />
+
         {/* Bottom Section: Controls & Telemetry */}
-        <View style={styles.bottomSection}>
+        <View style={[styles.bottomSection, { paddingHorizontal: tokens.gutter, paddingTop: sp(16), paddingBottom: sp(14) }]}>
           <View style={styles.controlsRow}>
-            <View style={styles.telemetryWrapper}>
+            <View style={[styles.telemetryWrapper, { paddingRight: tokens.gutter }]}>
               <TelemetryHUD telemetry={telemetry} isGrid={true} />
             </View>
-            <View style={styles.gimbalWrapper}>
+            {/* The readings and the camera controls are different kinds of
+                thing, so a rule between them rather than a gap. */}
+            <View style={{ width: tokens.rule.hair, alignSelf: 'stretch', backgroundColor: theme.hairline }} />
+            <View style={[styles.gimbalWrapper, { paddingLeft: tokens.gutter }]}>
               <GimbalControlPad 
                 onPanTilt={(p, y) => telemetryService.sendGimbalCommand(droneId, { pitch: p, yaw: y })}
                 onZoom={(z) => telemetryService.sendGimbalCommand(droneId, { zoomLevel: z })}
@@ -164,7 +186,7 @@ export default function MissionControlScreen({ route }: any) {
               />
             </View>
           </View>
-          <View style={styles.progressWrapper}>
+          <View style={[styles.progressWrapper, { marginTop: sp(18), borderTopColor: theme.hairline, borderTopWidth: tokens.rule.hair, paddingTop: sp(14) }]}>
             <MissionProgressBar totalWaypoints={TOTAL_WAYPOINTS} currentWaypoint={currentWaypoint} />
           </View>
         </View>
@@ -181,24 +203,11 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
-    paddingBottom: 16,
   },
   commandStrip: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  droneInfo: {
-    flex: 1,
-  },
-  droneId: {
-    fontFamily: typography.fonts.light,
-    fontSize: 31,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
   },
   droneStatus: {
     fontFamily: typography.fonts.medium,
@@ -212,10 +221,7 @@ const styles = StyleSheet.create({
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginLeft: 8,
+    marginLeft: 10,
   },
   actionBtnText: {
     fontFamily: typography.fonts.bold,
@@ -224,21 +230,18 @@ const styles = StyleSheet.create({
   topRow: {
     flex: 1,
     flexDirection: 'row',
-    padding: 16,
   },
   videoColumn: {
     // Was 2.2 : 1, which left the feed oversized against its own 832x384 source
     // and the map cramped beside it. Both panels are now framed to their source
     // ratios, so this split is just how the width is shared between them.
     flex: 1,
-    paddingRight: 16,
   },
   mapColumn: {
     flex: 1.1,
   },
   videoFeedWrapper: {
     flex: 1,
-    borderRadius: 8,
     overflow: 'hidden',
   },
   mapContainerSquare: {
@@ -247,22 +250,17 @@ const styles = StyleSheet.create({
     // the waypoint overlay is positioned against.
     flex: 1,
   },
-  bottomSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
+  bottomSection: {},
   controlsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
   gimbalWrapper: {
     flex: 1,
+    justifyContent: 'center',
   },
   telemetryWrapper: {
     flex: 2.2,
-    paddingRight: 16,
   },
-  progressWrapper: {
-    marginTop: 16,
-  },
+  progressWrapper: {},
 });

@@ -12,7 +12,7 @@ import { DroneAsset } from '../data/types';
 import type { DroneCardTelemetry } from '../components/DroneStatusCard';
 
 export default function FleetDashboardScreen({ navigation }: any) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const headerColors = useHeaderColors();
   const insets = useSafeAreaInsets();
 
@@ -94,6 +94,15 @@ export default function FleetDashboardScreen({ navigation }: any) {
     };
   }, [drones, telemetryById]);
 
+  // The three readings are one row of equal columns divided by hairlines rather
+  // than three floating gauges: the dividers say they are the same kind of
+  // measurement, and equal columns stop the widest label from setting the gaps.
+  const summary = [
+    { score: readiness, label: 'Readiness' },
+    { score: avgBattery, label: 'Avg Battery' },
+    { score: avgLink, label: 'Link Quality' },
+  ];
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <PageHeader
@@ -108,18 +117,36 @@ export default function FleetDashboardScreen({ navigation }: any) {
         }
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Panel>
-          <View style={styles.summaryRow}>
-            <CircularScore score={readiness} label="Readiness" size={90} strokeWidth={8} />
-            <CircularScore score={avgBattery} label="Avg Battery" size={90} strokeWidth={8} />
-            <CircularScore score={avgLink} label="Link Quality" size={90} strokeWidth={8} />
+      <ScrollView contentContainerStyle={{ paddingBottom: sp(32) }}>
+        <Panel flush>
+          <View
+            style={[
+              styles.summaryRow,
+              { paddingVertical: sp(24), paddingHorizontal: tokens.gutter },
+            ]}
+          >
+            {summary.map((cell, i) => (
+              <React.Fragment key={cell.label}>
+                {i > 0 ? (
+                  <View
+                    style={{
+                      width: tokens.rule.hair,
+                      alignSelf: 'stretch',
+                      backgroundColor: theme.hairline,
+                    }}
+                  />
+                ) : null}
+                <View style={styles.summaryCell}>
+                  <CircularScore score={cell.score} label={cell.label} size={90} strokeWidth={8} />
+                </View>
+              </React.Fragment>
+            ))}
           </View>
         </Panel>
 
         <SectionHeading>Fleet</SectionHeading>
-        <Panel>
-          <View style={styles.listContainer}>
+        <Panel flush>
+          <View style={{ paddingHorizontal: tokens.gutter }}>
             {drones.map(drone => (
               <DroneStatusCard 
                 key={drone.id} 
@@ -140,32 +167,6 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  headerTitle: {
-    fontFamily: typography.fonts.light,
-    fontSize: 27,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  headerDate: {
-    fontFamily: typography.fonts.semiBold,
-    fontSize: typography.sizes.sm,
-    letterSpacing: 0.5,
-  },
-  scrollContent: {
-    paddingTop: 12,
-    paddingBottom: 24,
-  },
-  statusStrip: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
   statusText: {
     fontFamily: typography.fonts.bold,
     fontSize: typography.sizes.sm,
@@ -173,16 +174,11 @@ const styles = StyleSheet.create({
   },
   summaryRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 10,
-    paddingVertical: 16,
+    alignItems: 'stretch',
   },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    width: '100%',
-    marginBottom: 8,
-  },
-  listContainer: {
-    paddingHorizontal: 16,
+  summaryCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

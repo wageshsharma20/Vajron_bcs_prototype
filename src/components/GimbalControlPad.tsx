@@ -33,7 +33,7 @@ const MockJoystick = ({ color, radius }: { color: string, radius: number }) => (
 );
 
 export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordToggle }: GimbalControlPadProps) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const [isRecording, setIsRecording] = useState(false);
   const [zoom, setZoom] = useState(1);
 
@@ -61,8 +61,13 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
 
   return (
     <View style={styles.outerContainer}>
-      <Text style={[styles.panelTitle, { color: theme.textSecondary }]}>CAMERA CONTROLS</Text>
-      <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.hairline }]}>
+      <Text style={[styles.panelTitle, { color: theme.textSecondary, marginBottom: sp(8) }]}>CAMERA CONTROLS</Text>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: theme.surface, borderColor: theme.hairline, borderWidth: tokens.rule.hair, paddingVertical: sp(10), paddingHorizontal: sp(14) },
+        ]}
+      >
         <View style={styles.singleRow}>
           
           <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceLight }]} onPress={onPhoto}>
@@ -91,21 +96,15 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
 
 const styles = StyleSheet.create({
   outerContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 4,
+    // Padding comes from the row this sits in, so the pad lines up with the
+    // telemetry grid beside it instead of insetting itself again.
   },
   panelTitle: {
     fontFamily: typography.fonts.semiBold,
     fontSize: 15,
     letterSpacing: 1,
-    marginBottom: 6,
   },
-  container: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-  },
+  container: {},
   singleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -120,7 +119,6 @@ const styles = StyleSheet.create({
   zoomBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -140,11 +138,12 @@ const styles = StyleSheet.create({
   actionBtn: {
     width: 44,
     height: 36,
-    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   recordCircle: {
+    // The one deliberate curve left in the app: a square here reads as "stop",
+    // which is the opposite of what this control does.
     width: 12,
     height: 12,
     borderRadius: 6,
