@@ -32,7 +32,7 @@ export default function MissionMapView({ player, isArmed, progress }: MissionMap
       <View style={[styles.frame, { borderColor: theme.hairline }]}>
         <VideoView
           player={player}
-          style={StyleSheet.absoluteFill}
+          style={styles.video}
           contentFit="fill"
           nativeControls={false}
           playsInline
@@ -53,6 +53,17 @@ export default function MissionMapView({ player, isArmed, progress }: MissionMap
 }
 
 const styles = StyleSheet.create({
+  // Sized explicitly rather than with absoluteFill: on web the underlying
+  // <video> keeps its intrinsic box under absoluteFill and simply overflows the
+  // frame, which both leaves dead space beside the picture and slides the map
+  // out from under the waypoints positioned over it.
+  video: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

@@ -17,7 +17,6 @@ import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
 const TOTAL_WAYPOINTS = FLIGHT_WAYPOINTS.length;
 import GimbalControlPad from '../components/GimbalControlPad';
 import MissionProgressBar from '../components/MissionProgressBar';
-import { NotificationBanner } from '../components/NotificationBanner';
 import ConfirmActionDialog from '../components/ConfirmActionDialog';
 import { DroneAlert, TelemetryFrame } from '../data/types';
 
@@ -30,7 +29,6 @@ export default function MissionControlScreen({ route }: any) {
   const updateGimbal = useTelemetryStore(state => state.updateGimbal);
 
   const [flightPath, setFlightPath] = useState<{ latitude: number, longitude: number }[]>([]);
-  const [alert, setAlert] = useState<DroneAlert | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [takeOffDialogVisible, setTakeOffDialogVisible] = useState(false);
   const [rtlDialogVisible, setRtlDialogVisible] = useState(false);
@@ -45,17 +43,6 @@ export default function MissionControlScreen({ route }: any) {
       });
     }
   }, [telemetry]);
-
-  useEffect(() => {
-    const unsubscribe = telemetryService.subscribeAlerts((newAlert) => {
-      if (newAlert.droneId === droneId) {
-        setAlert(newAlert);
-        // auto dismiss after 5s
-        setTimeout(() => setAlert(null), 5000);
-      }
-    });
-    return unsubscribe;
-  }, [droneId]);
 
   // The camera feed and the map recording are the same sortie, so one hook owns
   // both and keeps them aligned; take-off starts them and RTL rewinds them.
@@ -89,19 +76,10 @@ export default function MissionControlScreen({ route }: any) {
     useTelemetryStore.getState().resetTelemetry(droneId);
     setFlightPath([]);
     setIsPaused(false);
-    setAlert(null);
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      {alert && (
-        <NotificationBanner 
-          message={alert.message}
-          type={alert.severity === 'critical' ? 'error' : 'warning'}
-          onDismiss={() => setAlert(null)}
-        />
-      )}
-
       {/* Command Strip (Fixed at top) */}
       <View style={[styles.commandStrip, { borderBottomColor: theme.hairline }]}>
         <View style={styles.droneInfo}>
@@ -244,11 +222,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   videoColumn: {
-    flex: 2.2, // ~68% width
+    // Was 2.2 : 1, which left the feed oversized against its own 832x384 source
+    // and the map cramped beside it. Both panels are now framed to their source
+    // ratios, so this split is just how the width is shared between them.
+    flex: 1,
     paddingRight: 16,
   },
   mapColumn: {
-    flex: 1, // ~32% width
+    flex: 1.1,
   },
   videoFeedWrapper: {
     flex: 1,

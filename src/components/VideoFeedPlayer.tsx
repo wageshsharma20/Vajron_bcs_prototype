@@ -5,6 +5,10 @@ import { useTheme } from '../theme';
 import { TelemetryFrame } from '../data/types';
 import { typography } from '../theme';
 
+/** The camera source is 832x384; framing to it shows the whole picture without
+ * either letterboxing the box or cropping the sides away to fill it. */
+const FEED_ASPECT = 832 / 384;
+
 interface VideoFeedPlayerProps {
   telemetry: TelemetryFrame | null;
   player: VideoPlayer;
@@ -16,10 +20,11 @@ export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFee
   const { theme } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: '#1A1A1A' }]}>
+    <View style={styles.container}>
+      <View style={[styles.frame, { backgroundColor: '#1A1A1A' }]}>
       <VideoView
         player={player}
-        style={StyleSheet.absoluteFill}
+        style={styles.video}
         contentFit="cover"
         nativeControls={false}
         playsInline
@@ -45,16 +50,36 @@ export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFee
             HLS · 1080p · 152ms · HM30 SIG: {telemetry.signalStrength}%
           </Text>
         )}
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Sized explicitly rather than with absoluteFill: on web the underlying
+  // <video> keeps its intrinsic box under absoluteFill and simply overflows the
+  // frame, which both leaves dead space beside the picture and slides the map
+  // out from under the waypoints positioned over it.
+  video: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
     width: '100%',
+    justifyContent: 'center',
+  },
+  frame: {
+    width: '100%',
+    aspectRatio: FEED_ASPECT,
+    maxHeight: '100%',
+    alignSelf: 'center',
     overflow: 'hidden',
+    borderRadius: 8,
   },
   standbyVeil: {
     ...StyleSheet.absoluteFill,
