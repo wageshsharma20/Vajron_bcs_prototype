@@ -13,6 +13,7 @@ import VideoFeedPlayer from '../components/VideoFeedPlayer';
 import MissionMapView from '../components/MissionMapView';
 import { useMissionPlayback } from '../hooks/useMissionPlayback';
 import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
+import { PageHeader, useHeaderColors } from '../components/Chrome';
 
 const TOTAL_WAYPOINTS = FLIGHT_WAYPOINTS.length;
 import GimbalControlPad from '../components/GimbalControlPad';
@@ -22,7 +23,8 @@ import { DroneAlert, TelemetryFrame } from '../data/types';
 
 export default function MissionControlScreen({ route }: any) {
   const droneId = route.params?.droneId || 'DRONE-01'; // Fallback for direct tab click
-  const { theme } = useTheme();
+  const { theme, tokens } = useTheme();
+  const headerColors = useHeaderColors();
   const insets = useSafeAreaInsets();
   
   const telemetry = useTelemetry(droneId);
@@ -79,29 +81,32 @@ export default function MissionControlScreen({ route }: any) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      {/* Command Strip (Fixed at top) */}
-      <View style={[styles.commandStrip, { borderBottomColor: theme.hairline }]}>
-        <View style={styles.droneInfo}>
-          <Text style={[styles.droneId, { color: theme.textPrimary }]}>{droneId}</Text>
-          <Text style={[styles.droneStatus, { color: theme.textSecondary }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Masthead carries the aircraft and its mode; the command row sits on the
+          page beneath it so the controls are on a stable light surface. */}
+      <PageHeader
+        title={droneId}
+        subtitle={
+          <Text style={[styles.droneStatus, { color: headerColors.muted }]}>
             {telemetry?.flightMode?.toUpperCase() || 'UNKNOWN'} · {telemetry?.gpsFixType?.toUpperCase() || 'NO'} FIX
           </Text>
-        </View>
+        }
+      />
 
+      <View style={[styles.commandStrip, { borderBottomColor: theme.hairline, backgroundColor: theme.surface }]}>
         <View style={styles.actionsRow}>
           {!telemetry?.isArmed ? (
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.statusGreen, borderRadius: 20, paddingHorizontal: 16 }]} onPress={() => setTakeOffDialogVisible(true)}>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.statusGreen, borderRadius: tokens.radius.sm, paddingHorizontal: 16 }]} onPress={() => setTakeOffDialogVisible(true)}>
               <UploadCloud size={22} color="#FFFFFF" />
               <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>TAKE OFF</Text>
             </TouchableOpacity>
           ) : (
             <>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted, borderRadius: 20, paddingHorizontal: 16 }]} onPress={handlePauseToggle}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceMuted, borderRadius: tokens.radius.sm, paddingHorizontal: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.hairline }]} onPress={handlePauseToggle}>
                 {isPaused ? <Play size={22} color={theme.accentAmber} /> : <Pause size={22} color={theme.accentAmber} />}
                 <Text style={[styles.actionBtnText, { color: theme.accentAmber, marginLeft: 6 }]}>{isPaused ? 'RESUME' : 'PAUSE'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, borderRadius: 20, paddingHorizontal: 16 }]} onPress={() => setRtlDialogVisible(true)}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, borderRadius: tokens.radius.sm, paddingHorizontal: 16 }]} onPress={() => setRtlDialogVisible(true)}>
                 <DownloadCloud size={22} color="#FFFFFF" />
                 <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 6 }]}>RTL</Text>
               </TouchableOpacity>
@@ -180,10 +185,10 @@ const styles = StyleSheet.create({
   },
   commandStrip: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   droneInfo: {

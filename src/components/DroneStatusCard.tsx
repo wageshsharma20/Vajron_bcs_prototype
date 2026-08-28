@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../theme';
 import { DroneAsset, TelemetryFrame } from '../data/types';
 import { typography } from '../theme';
-import { usePulseAnimation } from '../hooks/usePulseAnimation';
 
 /**
  * Only the three fields the card actually renders. Narrowing this is what lets
@@ -30,7 +29,6 @@ function timeAgo(isoString: string) {
 
 export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStatusCardProps) {
   const { theme } = useTheme();
-  const pulseStyle = usePulseAnimation(drone.status === 'in-flight');
 
   const getStatusColor = () => {
     switch (drone.status) {
@@ -52,10 +50,12 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
           <Text style={[styles.title, { color: theme.textPrimary }]}>{drone.id}</Text>
         </View>
         
+        {/* Static. The in-flight badge used to pulse, which is decorative motion
+            on a status an operator reads rather than an alert. */}
         {drone.status === 'in-flight' ? (
-          <Animated.View style={[styles.badge, { backgroundColor: theme.surfaceMuted, borderLeftWidth: 2, borderLeftColor: theme.statusGreen }, pulseStyle]}>
+          <View style={[styles.badge, { backgroundColor: theme.surfaceMuted, borderLeftWidth: 2, borderLeftColor: theme.statusGreen }]}>
             <Text style={[styles.badgeText, { color: theme.textPrimary }]}>IN FLIGHT</Text>
-          </Animated.View>
+          </View>
         ) : (
           <View style={[styles.badge, { backgroundColor: theme.surfaceMuted }]}>
             <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{drone.status.toUpperCase()}</Text>

@@ -55,7 +55,9 @@ export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled:
       <TouchableOpacity 
         style={[
           styles.launchButton, 
-          { backgroundColor: isLaunchDisabled ? theme.surfaceMuted : theme.accentAmber }
+          // Primary action takes the brand, not the warning colour — amber here
+          // read as a caution on the one control meant to look affirmative.
+          { backgroundColor: isLaunchDisabled ? theme.surfaceMuted : theme.brand }
         ]} 
         disabled={isLaunchDisabled}
         onPress={onLaunch}

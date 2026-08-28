@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
+import { PageHeader, SectionHeading, Panel, useHeaderColors } from '../components/Chrome';
 import DroneStatusCard from '../components/DroneStatusCard';
 import CircularScore from '../components/CircularScore';
 import { mockDrones } from '../data/mockFleetData';
@@ -12,6 +13,7 @@ import type { DroneCardTelemetry } from '../components/DroneStatusCard';
 
 export default function FleetDashboardScreen({ navigation }: any) {
   const { theme } = useTheme();
+  const headerColors = useHeaderColors();
   const insets = useSafeAreaInsets();
 
   const handleDronePress = (drone: DroneAsset) => {
@@ -93,45 +95,41 @@ export default function FleetDashboardScreen({ navigation }: any) {
   }, [drones, telemetryById]);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>FLEET OVERVIEW</Text>
-        <Text style={[styles.headerDate, { color: theme.textSecondary }]}>
-          {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
-        </Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Status Strip */}
-        <View style={styles.statusStrip}>
-          <Text style={[styles.statusText, { color: theme.textSecondary }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <PageHeader
+        title="FLEET OVERVIEW"
+        meta={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+        subtitle={
+          <Text style={[styles.statusText, { color: headerColors.muted }]}>
             {idleCount} IDLE  ·  
-            <Text style={{ color: inFlightCount > 0 ? theme.accentAmber : theme.textSecondary }}> {inFlightCount} IN FLIGHT </Text>
+            <Text style={{ color: inFlightCount > 0 ? headerColors.title : headerColors.muted }}> {inFlightCount} IN FLIGHT </Text>
             ·  {chargingCount} CHARGING
           </Text>
-        </View>
+        }
+      />
 
-        {/* Fleet Summary Row */}
-        <View style={styles.summaryRow}>
-          <CircularScore score={readiness} label="Readiness" size={90} strokeWidth={8} />
-          <CircularScore score={avgBattery} label="Avg Battery" size={90} strokeWidth={8} />
-          <CircularScore score={avgLink} label="Link Quality" size={90} strokeWidth={8} />
-        </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Panel>
+          <View style={styles.summaryRow}>
+            <CircularScore score={readiness} label="Readiness" size={90} strokeWidth={8} />
+            <CircularScore score={avgBattery} label="Avg Battery" size={90} strokeWidth={8} />
+            <CircularScore score={avgLink} label="Link Quality" size={90} strokeWidth={8} />
+          </View>
+        </Panel>
 
-        <View style={[styles.divider, { backgroundColor: theme.hairline }]} />
-
-        {/* Drone List */}
-        <View style={styles.listContainer}>
-          {drones.map(drone => (
-            <DroneStatusCard 
-              key={drone.id} 
-              drone={drone} 
-              telemetry={telemetryById[drone.id]}
-              onPress={() => handleDronePress(drone)} 
-            />
-          ))}
-        </View>
+        <SectionHeading>Fleet</SectionHeading>
+        <Panel>
+          <View style={styles.listContainer}>
+            {drones.map(drone => (
+              <DroneStatusCard 
+                key={drone.id} 
+                drone={drone} 
+                telemetry={telemetryById[drone.id]}
+                onPress={() => handleDronePress(drone)} 
+              />
+            ))}
+          </View>
+        </Panel>
       </ScrollView>
     </View>
   );
@@ -141,7 +139,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -162,7 +159,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
   },
   statusStrip: {
     paddingHorizontal: 20,
@@ -177,7 +175,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 10,
-    marginBottom: 16,
+    paddingVertical: 16,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
@@ -185,6 +183,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   listContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
 });

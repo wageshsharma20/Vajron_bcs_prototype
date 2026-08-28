@@ -6,11 +6,13 @@ import { typography } from '../theme';
 import MapWaypointEditor, { MapWaypointEditorRef } from '../components/MapWaypointEditor';
 import PreFlightChecklist from '../components/PreFlightChecklist';
 import { Waypoint, PreFlightCheck } from '../data/types';
+import { PageHeader, useHeaderColors } from '../components/Chrome';
 import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
 import { generateSurveyGrid } from '../data/missionUtils';
 
 export default function MissionPlannerScreen({ navigation }: any) {
   const { theme } = useTheme();
+  const headerColors = useHeaderColors();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapWaypointEditorRef>(null);
 
@@ -49,12 +51,14 @@ export default function MissionPlannerScreen({ navigation }: any) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.hairline }]}>
-        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>MISSION PLANNER</Text>
-        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Park: Sanjay Van  ·  DRONE-01</Text>
-      </View>
+      <PageHeader
+        title="MISSION PLANNER"
+        subtitle={
+          <Text style={[styles.headerSubtitle, { color: headerColors.muted }]}>Park: Sanjay Van  ·  DRONE-01</Text>
+        }
+      />
 
       <View style={styles.contentRow}>
         <View style={styles.mapContainer}>

@@ -56,7 +56,6 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
   }, [index, fadeAnim]);
 
   const toggleExpand = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(!expanded);
     Animated.timing(rotateAnim, {
       toValue: expanded ? 0 : 1,
@@ -97,7 +96,7 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
   });
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim, borderBottomColor: theme.hairline }]}>
+    <View style={[styles.container, { borderBottomColor: theme.hairline }]}>
       <Pressable onPress={toggleExpand} style={styles.header}>
         <View style={styles.headerLeft}>
           <IconComponent size={22} color={theme.textPrimary} strokeWidth={1.5} />
@@ -112,9 +111,9 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
           <Pressable onPress={(e) => { e.stopPropagation(); /* Implement download logic */ }}>
             <Download size={24} color={theme.textSecondary} strokeWidth={1.5} />
           </Pressable>
-          <Animated.View style={{ transform: [{ rotate: spin }] }}>
+          <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
             <ChevronDown size={22} color={theme.textSecondary} strokeWidth={1} />
-          </Animated.View>
+          </View>
         </View>
       </Pressable>
 
@@ -140,7 +139,7 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
           })}
         </View>
       )}
-    </Animated.View>
+    </View>
   );
 };
 

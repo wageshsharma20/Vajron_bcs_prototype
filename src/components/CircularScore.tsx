@@ -1,11 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import Animated, { useSharedValue, useAnimatedProps, withTiming, Easing, withDelay } from 'react-native-reanimated';
-import { useTheme, typography } from '../theme';
-
-// Create animated SVG path
-const AnimatedPath = Animated.createAnimatedComponent(Path);
+import { useTheme, typography, statusShade, bandFor, StatusKey } from '../theme';
 
 type CircularScoreProps = {
   score: number;
@@ -13,75 +9,73 @@ type CircularScoreProps = {
   strokeWidth?: number;
   label?: string;
   color?: string;
+  /** Forces a band. Omitted, the band is taken from the value itself. */
+  status?: StatusKey;
 };
 
-export default function CircularScore({ score, size = 200, strokeWidth = 12, label, color: propColor }: CircularScoreProps) {
+/**
+ * Semicircular reading.
+ *
+ * The arc carries two things at once. Its hue is the band — green, amber or red
+ * — and its depth is the value inside that band, pale at the bottom of the range
+ * and deep at the top. So a weak green and a strong green are both green, and
+ * still tell apart at a glance.
+ *
+ * The figure is repeated as text beneath the arc, so the reading never depends
+ * on distinguishing colours.
+ *
+ * Drawn statically. The arc previously swept in on mount, which is decorative
+ * motion on a panel an operator reads at a glance.
+ */
+export default function CircularScore({
+  score,
+  size = 200,
+  strokeWidth = 12,
+  label,
+  color: propColor,
+  status,
+}: CircularScoreProps) {
   const { theme } = useTheme();
-  
+
   const radius = (size - strokeWidth) / 2;
   const cx = size / 2;
-  const cy = size / 2; 
+  const cy = size / 2;
 
   const arcPath = `M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`;
   const arcLength = Math.PI * radius;
-  
-  const progressLength = (score / 100) * arcLength;
-  const targetDashoffset = arcLength - progressLength;
+  const dashoffset = arcLength - (Math.max(0, Math.min(100, score)) / 100) * arcLength;
 
-  // Use passed color or conditional logic
-  let color = propColor;
-  if (!color) {
-    if (score >= 80) color = theme.statusGreen;
-    else if (score >= 50) color = theme.accentAmber;
-    else color = theme.accentRed;
-  }
-  
-  const height = size / 2 + strokeWidth;
+  const color = propColor ?? statusShade(status ?? bandFor(score), score);
 
-  const animatedOffset = useSharedValue(arcLength);
-
-  useEffect(() => {
-    animatedOffset.value = withDelay(300, withTiming(targetDashoffset, {
-      duration: 1200,
-      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-    }));
-  }, [targetDashoffset]);
-
-  const animatedProps = useAnimatedProps(() => {
-    return {
-      strokeDashoffset: animatedOffset.value,
-    };
-  });
+  // Butt caps stop the stroke exactly at cy rather than half a stroke below it,
+  // so the arc's true height is size/2; padding beyond that only pushes the
+  // figure out of the arc's opening.
+  const height = size / 2;
 
   return (
     <View style={styles.container}>
-      <View style={{ width: size, height: height, alignItems: 'center' }}>
+      <View style={{ width: size, height, alignItems: 'center' }}>
         <Svg width={size} height={height}>
+          <Path d={arcPath} stroke={theme.surfaceMuted} strokeWidth={strokeWidth} fill="transparent" />
           <Path
-            d={arcPath}
-            stroke={theme.surfaceMuted}
-            strokeWidth={strokeWidth}
-            fill="transparent"
-          />
-          <AnimatedPath
             d={arcPath}
             stroke={color}
             strokeWidth={strokeWidth}
             fill="transparent"
             strokeDasharray={`${arcLength}`}
-            animatedProps={animatedProps}
+            strokeDashoffset={dashoffset}
           />
         </Svg>
         <View style={styles.scoreOverlay}>
-          <Text style={[styles.scoreText, { color: theme.textPrimary, fontSize: size * 0.4 }]}>{score}</Text>
+          <Text style={[styles.scoreText, { color: theme.textPrimary, fontSize: size * 0.3 }]}>
+            {score}
+          </Text>
         </View>
       </View>
-      {label && (
-        <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
-      )}
+      {label && <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -89,21 +83,24 @@ const styles = StyleSheet.create({
   },
   scoreOverlay: {
     position: 'absolute',
-    bottom: -10, // Bring it down a bit so it sits on the baseline
+    top: 0,
+    bottom: -6,
     left: 0,
     right: 0,
     alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   scoreText: {
-    fontFamily: typography.fonts.light, // Zen signature
-    letterSpacing: -2,
+    fontFamily: typography.fonts.semiBold,
+    letterSpacing: -0.5,
     fontVariant: typography.tabularNums,
   },
   label: {
     fontFamily: typography.fonts.medium,
-    fontSize: 19,
-    letterSpacing: 1.5,
+    fontSize: 12,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
-    marginTop: 32, // Large gap (Ma)
+    marginTop: 12,
+    textAlign: 'center',
   },
 });

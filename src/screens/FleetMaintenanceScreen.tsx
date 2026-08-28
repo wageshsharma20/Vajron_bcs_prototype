@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useTheme } from '../theme';
+import { PageHeader } from '../components/Chrome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
 import InspectionAccordion from '../components/InspectionAccordion';
 import { mockDrones } from '../data/mockFleetData';
 
 export default function FleetMaintenanceScreen() {
-  const { theme } = useTheme();
+  const { theme, tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const [selectedDrone, setSelectedDrone] = useState(mockDrones[0]);
 
@@ -31,10 +32,8 @@ export default function FleetMaintenanceScreen() {
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <View style={[styles.header, { borderBottomColor: theme.hairline }]}>
-        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>FLEET MAINTENANCE</Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <PageHeader title="FLEET MAINTENANCE" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Drone Selector Mock */}
@@ -45,7 +44,7 @@ export default function FleetMaintenanceScreen() {
               style={[
                 styles.selectorBtn, 
                 { 
-                  backgroundColor: selectedDrone.id === drone.id ? theme.textPrimary : theme.surface,
+                  backgroundColor: selectedDrone.id === drone.id ? theme.brand : theme.surface,
                   borderColor: theme.hairline 
                 }
               ]}
@@ -53,7 +52,7 @@ export default function FleetMaintenanceScreen() {
             >
               <Text style={[
                 styles.selectorText, 
-                { color: selectedDrone.id === drone.id ? theme.background : theme.textPrimary }
+                { color: selectedDrone.id === drone.id ? theme.onBrand : theme.textPrimary }
               ]}>{drone.id}</Text>
             </TouchableOpacity>
           ))}
@@ -98,8 +97,8 @@ export default function FleetMaintenanceScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 16, borderTopColor: theme.hairline }]}>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.textPrimary }]}>
-          <Text style={[styles.actionBtnText, { color: theme.background }]}>SCHEDULE SERVICE</Text>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.brand, borderRadius: tokens.radius.sm }]}>
+          <Text style={[styles.actionBtnText, { color: theme.onBrand }]}>SCHEDULE SERVICE</Text>
         </TouchableOpacity>
       </View>
     </View>

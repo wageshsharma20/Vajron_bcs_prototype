@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../theme';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { TelemetryFrame } from '../data/types';
 import { typography } from '../theme';
 
@@ -10,7 +9,8 @@ interface TelemetryHUDProps {
   isGrid?: boolean;
 }
 
-// Helper component for animating individual numeric values without re-rendering the whole HUD
+// Renders one numeric value and its unit. Static: the readings update on their
+// own cadence and do not need motion to be noticed.
 function AnimatedNumber({ value, suffix, isGrid }: { value: string | number, suffix: string, isGrid?: boolean }) {
   const { theme } = useTheme();
   

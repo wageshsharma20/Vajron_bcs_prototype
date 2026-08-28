@@ -1,13 +1,38 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
+
+/**
+ * Design system for the GCS.
+ *
+ * Three variants of one government-grade system, not three unrelated skins:
+ * they share the type scale, the status ramps and the component vocabulary, and
+ * differ in the things that actually change how an interface reads — chrome
+ * treatment, corner language, rule weight and density.
+ *
+ *   secretariat  formal record. White page, deep green chrome, square corners,
+ *                visible rules, tight rows. Reads like an official register.
+ *   seva         citizen-facing service. Pale green page with white cards,
+ *                softer corners, generous spacing, lighter rules.
+ *   control      operations console. Near-black chrome over a white working
+ *                area, small radii, tight tabular rows, strong status chips.
+ *
+ * Everything is a token. Components must not hardcode colour, spacing or radius,
+ * or a variant switch will only reach half the screen.
+ */
+
+export type DesignVariant = 'secretariat' | 'seva' | 'control';
 
 export const typography = {
   fonts: {
-    regular: 'Inter_400Regular',
-    medium: 'Inter_500Medium',
-    semiBold: 'Inter_600SemiBold',
-    bold: 'Inter_700Bold',
+    // `light` is mapped to the regular face rather than left undefined: several
+    // styles ask for it, and an undefined fontFamily silently falls through to
+    // the platform font wherever there is no parent to inherit from.
+    light: 'NotoSans_400Regular',
+    regular: 'NotoSans_400Regular',
+    medium: 'NotoSans_500Medium',
+    semiBold: 'NotoSans_600SemiBold',
+    bold: 'NotoSans_700Bold',
   },
-  tabularNums: ['tabular-nums'] as const,
+  tabularNums: ['tabular-nums'] as ('tabular-nums')[],
   sizes: {
     xs: 14,
     sm: 16,
@@ -16,7 +41,7 @@ export const typography = {
     lg: 24,
     xl: 30,
     xxl: 36,
-  }
+  },
 } as const;
 
 export const spacing = {
@@ -32,18 +57,29 @@ export const spacing = {
 export const layout = {
   radius: 8,
   radiusSm: 4,
-  hairline: 1, 
+  hairline: 1,
 } as const;
 
 export type ColorTheme = {
   background: string;
   surface: string;
   surfaceMuted: string;
+  /** Alias kept because several components already read this name. */
+  surfaceLight: string;
   textPrimary: string;
   textSecondary: string;
   hairline: string;
+  /** Alias kept because several components already read this name. */
+  border: string;
   overlay: string;
-  
+
+  /** Chrome: the header and tab bar. */
+  brand: string;
+  onBrand: string;
+  onBrandMuted: string;
+  /** Accent used for the active state on light chrome. */
+  brandAccent: string;
+
   statusGreen: string;
   statusGreenMuted: string;
   accentAmber: string;
@@ -52,38 +88,204 @@ export type ColorTheme = {
   accentRedMuted: string;
 };
 
-export const lightTheme: ColorTheme = {
-  background: '#FFFFFF',
-  surface: '#F8F9FA',
-  surfaceMuted: '#E9ECEF',
-  textPrimary: '#000000',
-  textSecondary: '#6C757D',
-  hairline: '#E9ECEF',
-  overlay: 'rgba(255, 255, 255, 0.85)',
-  statusGreen: '#2D9B2B',
-  statusGreenMuted: '#ECFDF5',
-  
-  accentAmber: '#FFA500',
-  accentAmberMuted: '#FFFBEB',
-  
-  accentRed: '#E12C2C',
-  accentRedMuted: '#FEF2F2',
+export type DesignTokens = {
+  id: DesignVariant;
+  /** Shown only in the design switcher, never in application content. */
+  label: string;
+  color: ColorTheme;
+  radius: { sq: number; sm: number; md: number; lg: number };
+  /** Multiplier on the shared spacing scale, so density is a variant decision. */
+  density: number;
+  /** Whether section headings are set in caps with tracking. */
+  capsSections: boolean;
+  /** Rule weight between rows and around panels. */
+  ruleWidth: number;
 };
+
+/**
+ * Status ramps, light to dark.
+ *
+ * A value carries two readings at once: which band it is in (hue) and how far
+ * through that band it sits (depth). Three stops rather than two, because
+ * blending straight from pale to deep drifts through a brighter, more saturated
+ * middle than a government interface should show.
+ */
+export const STATUS_RAMPS = {
+  green: ['#A8C4AC', '#5E8F6B', '#1E5233'],
+  amber: ['#DCC29B', '#B8863F', '#77490F'],
+  red: ['#D4A9A4', '#AE584E', '#75211A'],
+} as const;
+
+export type StatusKey = keyof typeof STATUS_RAMPS;
+
+/**
+ * Picks a colour from a status ramp for a 0-100 value: paler at the bottom of
+ * the range, deeper at the top, always inside the band's own hue.
+ */
+export function statusShade(status: StatusKey, value: number): string {
+  const ramp = STATUS_RAMPS[status];
+  const v = Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+  const seg = (v / 100) * (ramp.length - 1);
+  const i = Math.min(Math.floor(seg), ramp.length - 2);
+  const f = seg - i;
+  const toRgb = (hex: string) => [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16));
+  const a = toRgb(ramp[i]);
+  const b = toRgb(ramp[i + 1]);
+  return (
+    '#' +
+    a
+      .map((c, k) => Math.round(c + (b[k] - c) * f).toString(16).padStart(2, '0'))
+      .join('')
+  );
+}
+
+/**
+ * Maps a reading to its band. Kept here so every surface bands identically.
+ *
+ * Green is reserved for a genuinely strong reading. An earlier 70/40 split put
+ * readings in the seventies — a fleet that is merely serviceable — in the same
+ * band as one at full readiness, so a panel of middling numbers came up all
+ * green and the banding told the operator nothing.
+ */
+export function bandFor(value: number): StatusKey {
+  if (value >= 80) return 'green';
+  if (value >= 50) return 'amber';
+  return 'red';
+}
+
+const SECRETARIAT: DesignTokens = {
+  id: 'secretariat',
+  label: 'Secretariat',
+  color: {
+    background: '#FFFFFF',
+    surface: '#F4F7F4',
+    surfaceMuted: '#E6EDE7',
+    surfaceLight: '#E6EDE7',
+    textPrimary: '#10130F',
+    textSecondary: '#4A5850',
+    hairline: '#C7D3C9',
+    border: '#C7D3C9',
+    overlay: 'rgba(16, 19, 15, 0.55)',
+    brand: '#0F3D24',
+    onBrand: '#FFFFFF',
+    onBrandMuted: '#B9CFC1',
+    brandAccent: '#0F3D24',
+    statusGreen: '#1E5233',
+    statusGreenMuted: '#E8F0EA',
+    accentAmber: '#8A5A12',
+    accentAmberMuted: '#F6EEDF',
+    accentRed: '#8C2A21',
+    accentRedMuted: '#F7E9E7',
+  },
+  radius: { sq: 0, sm: 2, md: 3, lg: 4 },
+  density: 0.85,
+  capsSections: true,
+  ruleWidth: 1,
+};
+
+const SEVA: DesignTokens = {
+  id: 'seva',
+  label: 'Seva',
+  color: {
+    background: '#F1F6F2',
+    surface: '#FFFFFF',
+    surfaceMuted: '#E4EFE7',
+    surfaceLight: '#E4EFE7',
+    textPrimary: '#14181A',
+    textSecondary: '#566B5E',
+    hairline: '#D5E2D8',
+    border: '#D5E2D8',
+    overlay: 'rgba(20, 24, 26, 0.5)',
+    brand: '#17603A',
+    onBrand: '#FFFFFF',
+    onBrandMuted: '#C4DCCD',
+    brandAccent: '#17603A',
+    statusGreen: '#1F6A41',
+    statusGreenMuted: '#E7F2EB',
+    accentAmber: '#95611A',
+    accentAmberMuted: '#F8F0E2',
+    accentRed: '#9A3229',
+    accentRedMuted: '#F9ECEA',
+  },
+  radius: { sq: 6, sm: 8, md: 10, lg: 14 },
+  density: 1.15,
+  capsSections: false,
+  ruleWidth: 1,
+};
+
+const CONTROL: DesignTokens = {
+  id: 'control',
+  label: 'Control',
+  color: {
+    background: '#FFFFFF',
+    surface: '#F2F5F3',
+    surfaceMuted: '#E3E9E4',
+    surfaceLight: '#E3E9E4',
+    textPrimary: '#0B0E0C',
+    textSecondary: '#4E5A52',
+    hairline: '#CCD5CE',
+    border: '#CCD5CE',
+    overlay: 'rgba(11, 14, 12, 0.6)',
+    brand: '#111614',
+    onBrand: '#FFFFFF',
+    onBrandMuted: '#9FB0A6',
+    brandAccent: '#2E7D51',
+    statusGreen: '#22603C',
+    statusGreenMuted: '#E9F1EC',
+    accentAmber: '#8F5A14',
+    accentAmberMuted: '#F6EFE1',
+    accentRed: '#8F2C22',
+    accentRedMuted: '#F8EAE8',
+  },
+  radius: { sq: 2, sm: 4, md: 5, lg: 6 },
+  density: 0.9,
+  capsSections: true,
+  ruleWidth: 1,
+};
+
+export const VARIANTS: Record<DesignVariant, DesignTokens> = {
+  secretariat: SECRETARIAT,
+  seva: SEVA,
+  control: CONTROL,
+};
+
+export const VARIANT_ORDER: DesignVariant[] = ['secretariat', 'seva', 'control'];
+
+/** Backwards-compatible export: the default variant's palette. */
+export const lightTheme: ColorTheme = SECRETARIAT.color;
 
 type ThemeContextType = {
   theme: ColorTheme;
+  tokens: DesignTokens;
+  variant: DesignVariant;
+  setVariant: (v: DesignVariant) => void;
+  /** Spacing scaled by the variant's density, so panels breathe consistently. */
+  sp: (n: number) => number;
 };
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: lightTheme,
+  theme: SECRETARIAT.color,
+  tokens: SECRETARIAT,
+  variant: 'secretariat',
+  setVariant: () => {},
+  sp: (n) => n,
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <ThemeContext.Provider value={{ theme: lightTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  const [variant, setVariant] = useState<DesignVariant>('secretariat');
+
+  const value = useMemo(() => {
+    const tokens = VARIANTS[variant];
+    return {
+      theme: tokens.color,
+      tokens,
+      variant,
+      setVariant,
+      sp: (n: number) => Math.round(n * tokens.density),
+    };
+  }, [variant]);
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

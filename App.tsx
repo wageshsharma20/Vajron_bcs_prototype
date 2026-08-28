@@ -7,14 +7,14 @@ import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
 import {
-  Inter_300Light,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
+  NotoSans_400Regular,
+  NotoSans_500Medium,
+  NotoSans_600SemiBold,
+  NotoSans_700Bold,
+} from '@expo-google-fonts/noto-sans';
 
-import { lightTheme } from './src/theme';
+import { lightTheme, ThemeProvider, useTheme } from './src/theme';
+import DesignVariantSwitcher from './src/components/DesignVariantSwitcher';
 import CustomTabBar from './src/components/CustomTabBar';
 
 import FleetDashboardScreen from './src/screens/FleetDashboardScreen';
@@ -35,21 +35,21 @@ const customPaperTheme = {
   },
   fonts: {
     ...MD3LightTheme.fonts,
-    bodyLarge: { fontFamily: 'Inter_400Regular' },
-    bodyMedium: { fontFamily: 'Inter_400Regular' },
-    bodySmall: { fontFamily: 'Inter_400Regular' },
-    labelLarge: { fontFamily: 'Inter_500Medium' },
-    labelMedium: { fontFamily: 'Inter_500Medium' },
-    labelSmall: { fontFamily: 'Inter_500Medium' },
-    titleLarge: { fontFamily: 'Inter_600SemiBold' },
-    titleMedium: { fontFamily: 'Inter_600SemiBold' },
-    titleSmall: { fontFamily: 'Inter_600SemiBold' },
-    headlineLarge: { fontFamily: 'Inter_700Bold' },
-    headlineMedium: { fontFamily: 'Inter_700Bold' },
-    headlineSmall: { fontFamily: 'Inter_700Bold' },
-    displayLarge: { fontFamily: 'Inter_700Bold' },
-    displayMedium: { fontFamily: 'Inter_700Bold' },
-    displaySmall: { fontFamily: 'Inter_700Bold' },
+    bodyLarge: { fontFamily: 'NotoSans_400Regular' },
+    bodyMedium: { fontFamily: 'NotoSans_400Regular' },
+    bodySmall: { fontFamily: 'NotoSans_400Regular' },
+    labelLarge: { fontFamily: 'NotoSans_500Medium' },
+    labelMedium: { fontFamily: 'NotoSans_500Medium' },
+    labelSmall: { fontFamily: 'NotoSans_500Medium' },
+    titleLarge: { fontFamily: 'NotoSans_600SemiBold' },
+    titleMedium: { fontFamily: 'NotoSans_600SemiBold' },
+    titleSmall: { fontFamily: 'NotoSans_600SemiBold' },
+    headlineLarge: { fontFamily: 'NotoSans_700Bold' },
+    headlineMedium: { fontFamily: 'NotoSans_700Bold' },
+    headlineSmall: { fontFamily: 'NotoSans_700Bold' },
+    displayLarge: { fontFamily: 'NotoSans_700Bold' },
+    displayMedium: { fontFamily: 'NotoSans_700Bold' },
+    displaySmall: { fontFamily: 'NotoSans_700Bold' },
   }
 };
 
@@ -66,14 +66,18 @@ export default function App() {
 
   useEffect(() => {
     async function loadFonts() {
-      await Font.loadAsync({
-        Inter_300Light,
-        Inter_400Regular,
-        Inter_500Medium,
-        Inter_600SemiBold,
-        Inter_700Bold,
-      });
-      setFontsLoaded(true);
+      try {
+        await Font.loadAsync({
+          NotoSans_400Regular,
+          NotoSans_500Medium,
+          NotoSans_600SemiBold,
+          NotoSans_700Bold,
+        });
+      } finally {
+        // Render either way. Holding on the spinner when a face fails to resolve
+        // leaves the app on a blank screen with nothing to explain why.
+        setFontsLoaded(true);
+      }
     }
     loadFonts();
   }, []);
@@ -87,11 +91,47 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider style={{ backgroundColor: '#F0F1F3' }}>
-      <PaperProvider theme={customPaperTheme}>
-        <NavigationContainer theme={navTheme}>
+    <ThemeProvider>
+      <AppShell />
+    </ThemeProvider>
+  );
+}
+
+/**
+ * Sits inside the provider so the navigation and Paper themes follow the active
+ * design variant; reading the palette statically left half the chrome on the
+ * default whichever variant was selected.
+ */
+function AppShell() {
+  const { theme } = useTheme();
+
+  const paperTheme = {
+    ...customPaperTheme,
+    colors: {
+      ...customPaperTheme.colors,
+      primary: theme.brand,
+      background: theme.background,
+      surface: theme.surface,
+      error: theme.accentRed,
+    },
+  };
+
+  const navigationTheme = {
+    ...navTheme,
+    colors: { ...navTheme.colors, background: theme.background },
+  };
+
+  return (
+    <SafeAreaProvider style={{ backgroundColor: theme.background }}>
+      <PaperProvider theme={paperTheme}>
+        <NavigationContainer theme={navigationTheme}>
           <Tab.Navigator
-            tabBar={(props) => <CustomTabBar {...props} />}
+            tabBar={(props) => (
+              <>
+                <DesignVariantSwitcher />
+                <CustomTabBar {...props} />
+              </>
+            )}
             screenOptions={{ headerShown: false }}
           >
             <Tab.Screen name="FleetDashboard" component={FleetDashboardScreen} />
