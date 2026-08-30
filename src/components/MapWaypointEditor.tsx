@@ -30,7 +30,7 @@ export interface MapWaypointEditorRef {
 const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProps>(
   ({ waypoints, onWaypointsChange, defaultAltitude = 30 }, ref) => {
     const { theme } = useTheme();
-    const { onLayout, style: frameSize } = useFittedFrame(MAP_FRAME_ASPECT);
+    const { ref: frameSlot, onLayout, style: frameSize } = useFittedFrame(MAP_FRAME_ASPECT);
 
     useImperativeHandle(ref, () => ({
       addWaypoint: (lat: number, lng: number) => {
@@ -55,7 +55,7 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
     });
 
     return (
-      <View style={styles.container} onLayout={onLayout}>
+      <View ref={frameSlot} style={styles.container} onLayout={onLayout}>
         {/* Locked to the source frame's ratio so the still and the markers share
             one coordinate space; measured against the slot so it fits whichever
             of the two dimensions is the tighter one. */}

@@ -7,6 +7,12 @@ import { typography } from '../theme';
 interface TelemetryHUDProps {
   telemetry: TelemetryFrame | null;
   isGrid?: boolean;
+  /**
+   * How many readings sit across. Three suits a column beside other content;
+   * six turns the table into a single ribbon for a full-width band; two suits a
+   * narrow tower. The rules fall wherever this puts the row breaks.
+   */
+  columns?: number;
 }
 
 /**
@@ -24,8 +30,6 @@ function Reading({ value, suffix, isGrid }: { value: string | number; suffix: st
   );
 }
 
-const COLUMNS = 3;
-
 /**
  * The six flight readings.
  *
@@ -35,7 +39,7 @@ const COLUMNS = 3;
  * effort. The rules only run between cells, never around the outside — an outer
  * box would make the table a card sitting on the page instead of part of it.
  */
-export default function TelemetryHUD({ telemetry, isGrid = false }: TelemetryHUDProps) {
+export default function TelemetryHUD({ telemetry, isGrid = false, columns = 3 }: TelemetryHUDProps) {
   const { theme, tokens, sp } = useTheme();
 
   if (!telemetry) return <View style={[styles.container, { backgroundColor: theme.surface }]}><Text>No Telemetry</Text></View>;
@@ -69,10 +73,11 @@ export default function TelemetryHUD({ telemetry, isGrid = false }: TelemetryHUD
               styles.cellWrapper,
               isGrid && styles.gridCell,
               isGrid && {
+                width: `${100 / columns}%` as any,
                 borderColor: theme.hairline,
-                borderLeftWidth: i % COLUMNS === 0 ? 0 : tokens.rule.hair,
-                borderTopWidth: i < COLUMNS ? 0 : tokens.rule.hair,
-                paddingLeft: i % COLUMNS === 0 ? 0 : sp(16),
+                borderLeftWidth: i % columns === 0 ? 0 : tokens.rule.hair,
+                borderTopWidth: i < columns ? 0 : tokens.rule.hair,
+                paddingLeft: i % columns === 0 ? 0 : sp(16),
                 paddingRight: sp(16),
                 paddingVertical: sp(14),
               },
@@ -111,8 +116,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gridCell: {
-    // Three even columns; COLUMNS above is what decides where the rules fall.
-    width: '33.33%',
+    // Width comes from the `columns` prop; see the cell style above.
     alignItems: 'flex-start',
   },
   label: {

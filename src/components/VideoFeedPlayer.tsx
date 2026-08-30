@@ -21,10 +21,10 @@ export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFee
   const { theme } = useTheme();
   // Measured to the slot rather than declared at 100% width, so a short slot
   // shrinks the frame instead of clipping the picture inside it.
-  const { onLayout, style: frameSize } = useFittedFrame(FEED_ASPECT);
+  const { ref: frameSlot, onLayout, style: frameSize } = useFittedFrame(FEED_ASPECT);
 
   return (
-    <View style={styles.container} onLayout={onLayout}>
+    <View ref={frameSlot} style={styles.container} onLayout={onLayout}>
       <View style={[styles.frame, frameSize, { backgroundColor: '#1A1A1A' }]}>
       <VideoView
         player={player}

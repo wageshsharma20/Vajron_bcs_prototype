@@ -92,10 +92,13 @@ export function PageHeader({
   title,
   meta,
   subtitle,
+  foot,
 }: {
   title: string;
   meta?: string;
   subtitle?: React.ReactNode;
+  /** Chrome anchored to the bottom of the spine, below the meta. */
+  foot?: React.ReactNode;
 }) {
   const { theme, tokens, sp } = useTheme();
   const insets = useSafeAreaInsets();
@@ -124,9 +127,12 @@ export function PageHeader({
         {subtitle ? <View style={{ marginTop: sp(18) }}>{subtitle}</View> : null}
       </View>
 
-      {meta ? (
-        <Text style={[styles.spineMeta, { color: theme.onBrandMuted }]}>{meta}</Text>
-      ) : null}
+      <View>
+        {meta ? (
+          <Text style={[styles.spineMeta, { color: theme.onBrandMuted }]}>{meta}</Text>
+        ) : null}
+        {foot}
+      </View>
     </View>
   );
 }
@@ -140,18 +146,21 @@ export function Page({
   title,
   meta,
   subtitle,
+  spineFoot,
   children,
 }: {
   title: string;
   meta?: string;
   subtitle?: React.ReactNode;
+  /** Chrome for the foot of the spine — never mission data. */
+  spineFoot?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { theme } = useTheme();
 
   return (
     <View style={[styles.page, { backgroundColor: theme.background }]}>
-      <PageHeader title={title} meta={meta} subtitle={subtitle} />
+      <PageHeader title={title} meta={meta} subtitle={subtitle} foot={spineFoot} />
       <View style={styles.body}>{children}</View>
     </View>
   );

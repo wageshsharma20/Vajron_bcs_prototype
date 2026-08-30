@@ -25,10 +25,10 @@ interface MissionMapViewProps {
  */
 export default function MissionMapView({ player, isArmed, progress }: MissionMapViewProps) {
   const { theme } = useTheme();
-  const { onLayout, style: frameSize } = useFittedFrame(MAP_FRAME_ASPECT);
+  const { ref: frameSlot, onLayout, style: frameSize } = useFittedFrame(MAP_FRAME_ASPECT);
 
   return (
-    <View style={styles.container} onLayout={onLayout}>
+    <View ref={frameSlot} style={styles.container} onLayout={onLayout}>
       {/* Same ratio lock as the planner: the markers are positioned as fractions
           of this frame, so the video must fill it exactly rather than be cropped.
           The frame is measured to the slot rather than declared at 100% width,
