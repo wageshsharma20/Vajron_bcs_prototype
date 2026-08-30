@@ -218,10 +218,33 @@ export default function MissionControlScreen({ route }: any) {
 
           paddingVertical, not paddingTop: both columns centre their contents,
           so padding on one side alone shifted everything down by half of it. */}
-      <View style={{ flex: 1, minHeight: 132, flexDirection: 'row', paddingHorizontal: g, paddingVertical: sp(18) }}>
-        <View style={{ flex: 1.3, paddingRight: g, justifyContent: 'center' }}>{map}</View>
+      {/* The row's three children default to stretching over its full cross
+          height (flexDirection 'row' -> alignItems 'stretch'), and the readings
+          grid is the tallest thing here at 147 — taller than the row's inner
+          box comes out to at most viewport sizes. justifyContent:'center' on
+          that column only centres a child within whatever height stretch
+          handed it; it cannot rescue a child bigger than that box, so the grid
+          overflowed the column by ~6px top and bottom. The vertical rule,
+          bounded to the (shorter) stretched box, then read as falling short of
+          — or the grid's own border as extending past — the line meant to
+          divide it.
+
+          alignSelf: 'center' opts this one column out of stretching: it sizes
+          to its own content instead of the row's, so it can never be shorter
+          than what it holds regardless of how much room flex:1 happens to give
+          the row. minHeight is raised to match, so on a viewport too short to
+          give the row that space naturally, the row itself grows to make room
+          rather than clipping against the rule above or the footer below. */}
+      <View style={{ flex: 1, minHeight: 190, flexDirection: 'row', paddingHorizontal: g, paddingVertical: sp(18) }}>
+        {/* The map is width-bound in its column — its slot is already taller
+            than its ratio needs, so only width grows it further. That width
+            comes from two places, both self-contained: less of the map's own
+            padding is spent on the gap before the rule, and the map's share of
+            the row grows while the readings column gives up exactly that much,
+            camera controls untouched. */}
+        <View style={{ flex: 1.45, paddingRight: 14, justifyContent: 'center' }}>{map}</View>
         <VRule />
-        <View style={{ flex: 1.55, paddingHorizontal: g, justifyContent: 'center' }}>
+        <View style={{ flex: 1.4, paddingHorizontal: g, justifyContent: 'center', alignSelf: 'center' }}>
           {readings(3)}
         </View>
         <VRule />
