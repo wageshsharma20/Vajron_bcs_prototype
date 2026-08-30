@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useTheme } from '../theme';
-import { PageHeader } from '../components/Chrome';
+import { Page, SectionHeading, Rule } from '../components/Chrome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
 import InspectionAccordion from '../components/InspectionAccordion';
 import { mockDrones } from '../data/mockFleetData';
 
 export default function FleetMaintenanceScreen() {
-  const { theme, tokens } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const insets = useSafeAreaInsets();
   const [selectedDrone, setSelectedDrone] = useState(mockDrones[0]);
 
@@ -31,149 +31,155 @@ export default function FleetMaintenanceScreen() {
     { label: 'Motor Calibrated', value: '05 Sep 2025' }
   ];
 
-  return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <PageHeader title="FLEET MAINTENANCE" />
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Drone Selector Mock */}
-        <View style={styles.selectorRow}>
-          {mockDrones.map(drone => (
-            <TouchableOpacity 
-              key={drone.id} 
+  /**
+   * The aircraft selector: a standing list beside the record rather than a
+   * segmented strip above it. It costs width but gives the record the page's
+   * full height, and it leaves room for a fleet longer than four.
+   */
+  const selector = (
+    <View
+      style={[
+        styles.selectorColumn,
+        { borderRightWidth: tokens.rule.hair, borderRightColor: theme.hairline },
+      ]}
+    >
+      {mockDrones.map((drone) => {
+        const selected = selectedDrone.id === drone.id;
+        return (
+          <TouchableOpacity
+            key={drone.id}
+            style={[
+              styles.selectorBtn,
+              {
+                backgroundColor: selected ? theme.brand : theme.background,
+                paddingVertical: sp(17),
+                paddingHorizontal: tokens.gutter,
+                borderBottomWidth: tokens.rule.hair,
+                borderBottomColor: theme.hairline,
+              },
+            ]}
+            onPress={() => setSelectedDrone(drone)}
+          >
+            <Text
               style={[
-                styles.selectorBtn, 
-                { 
-                  backgroundColor: selectedDrone.id === drone.id ? theme.brand : theme.surface,
-                  borderColor: theme.hairline 
-                }
+                styles.selectorText,
+                { color: selected ? theme.onBrand : theme.textPrimary },
               ]}
-              onPress={() => setSelectedDrone(drone)}
             >
-              <Text style={[
-                styles.selectorText, 
-                { color: selectedDrone.id === drone.id ? theme.onBrand : theme.textPrimary }
-              ]}>{drone.id}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <InspectionAccordion 
-          index={0}
-          data={{
-            category: "Hardware & Firmware",
-            iconName: "Wrench",
-            items: mockHardwareData.map((d, i) => ({ id: `hw-${i}`, name: d.label, value: d.value, status: 'good' }))
-          }}
-        />
-        <InspectionAccordion 
-          index={1}
-          data={{
-            category: "Battery Health",
-            iconName: "Sparkles",
-            items: mockBatteryData.map((d, i) => ({ id: `bat-${i}`, name: d.label, value: d.value, status: d.label === 'Degradation' ? 'attention' : 'good' }))
-          }}
-        />
-        <InspectionAccordion 
-          index={2}
-          data={{
-            category: "Service History",
-            iconName: "ShieldCheck",
-            items: mockServiceData.map((d, i) => ({ id: `srv-${i}`, name: d.label, value: d.value, status: 'good' }))
-          }}
-        />
-
-        <View style={[styles.supplementaryModule, { backgroundColor: theme.surfaceMuted, borderColor: theme.hairline }]}>
-          <Text style={[styles.suppTitle, { color: theme.textSecondary }]}>SERVICE SCHEDULE</Text>
-          <View style={styles.suppRow}>
-            <Text style={[styles.suppLabel, { color: theme.textPrimary }]}>Next Required Service</Text>
-            <Text style={[styles.suppValue, { color: theme.textPrimary }]}>in 42 flight hours</Text>
-          </View>
-          <View style={[styles.suppRow, { marginTop: 8 }]}>
-            <Text style={[styles.suppLabel, { color: theme.textSecondary }]}>Firmware Version</Text>
-            <Text style={[styles.suppValue, { color: theme.textSecondary }]}>v2.4.1 (Up to date)</Text>
-          </View>
-        </View>
-      </ScrollView>
-
-      <View style={[styles.footer, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 16, borderTopColor: theme.hairline }]}>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.brand, borderRadius: tokens.radius.sm }]}>
-          <Text style={[styles.actionBtnText, { color: theme.onBrand }]}>SCHEDULE SERVICE</Text>
-        </TouchableOpacity>
-      </View>
+              {drone.id}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
+  );
+
+  const record = (
+    <ScrollView style={styles.scroller} contentContainerStyle={{ paddingBottom: sp(24) }}>
+      <InspectionAccordion 
+        index={0}
+        data={{
+          category: "Hardware & Firmware",
+          iconName: "Wrench",
+          items: mockHardwareData.map((d, i) => ({ id: `hw-${i}`, name: d.label, value: d.value, status: 'good' }))
+        }}
+      />
+      <InspectionAccordion 
+        index={1}
+        data={{
+          category: "Battery Health",
+          iconName: "Sparkles",
+          items: mockBatteryData.map((d, i) => ({ id: `bat-${i}`, name: d.label, value: d.value, status: d.label === 'Degradation' ? 'attention' : 'good' }))
+        }}
+      />
+      <InspectionAccordion 
+        index={2}
+        data={{
+          category: "Service History",
+          iconName: "ShieldCheck",
+          items: mockServiceData.map((d, i) => ({ id: `srv-${i}`, name: d.label, value: d.value, status: 'good' }))
+        }}
+      />
+
+      {/* Holds the same two rows as the accordions above it, so it reads the
+          same way: a heading, a rule, and rows on the gutter. */}
+      <SectionHeading>Service Schedule</SectionHeading>
+      <View style={{ paddingHorizontal: tokens.gutter }}>
+        <View style={[styles.suppRow, { paddingVertical: sp(15) }]}>
+          <Text style={[styles.suppLabel, { color: theme.textPrimary }]}>Next Required Service</Text>
+          <Text style={[styles.suppValue, { color: theme.textPrimary }]}>in 42 flight hours</Text>
+        </View>
+        <Rule />
+        <View style={[styles.suppRow, { paddingVertical: sp(15) }]}>
+          <Text style={[styles.suppLabel, { color: theme.textSecondary }]}>Firmware Version</Text>
+          <Text style={[styles.suppValue, { color: theme.textSecondary }]}>v2.4.1 (Up to date)</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  // The action bar is closed off by the heaviest rule on the page, so the
+  // standing control never reads as another content row.
+  const actionBar = (
+    <View
+      style={{
+        paddingHorizontal: tokens.gutter,
+        paddingTop: sp(18),
+        paddingBottom: insets.bottom + sp(18),
+        borderTopColor: theme.textPrimary,
+        borderTopWidth: tokens.rule.thick,
+        backgroundColor: theme.background,
+      }}
+    >
+      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.brand, paddingVertical: sp(16) }]}>
+        <Text style={[styles.actionBtnText, { color: theme.onBrand }]}>SCHEDULE SERVICE</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <Page title="FLEET MAINTENANCE">
+      <View style={styles.split}>
+        {selector}
+        <View style={styles.recordColumn}>
+          {record}
+          {actionBar}
+        </View>
+      </View>
+    </Page>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  split: {
     flex: 1,
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerTitle: {
-    fontFamily: typography.fonts.light,
-    fontSize: 31,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  scrollContent: {
-    paddingBottom: 80,
-  },
-  selectorRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    flexWrap: 'wrap',
+  },
+  recordColumn: {
+    flex: 1,
+  },
+  scroller: {
+    flex: 1,
+  },
+  selectorColumn: {
+    width: '24%',
   },
   selectorBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    marginRight: 8,
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   selectorText: {
     fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.xs,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    fontSize: 12,
+    letterSpacing: 1.1,
   },
   actionBtn: {
-    paddingVertical: 16,
-    borderRadius: 8,
     alignItems: 'center',
   },
   actionBtnText: {
     fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.base,
-    letterSpacing: 1,
-  },
-  supplementaryModule: {
-    marginHorizontal: 20,
-    marginVertical: 16,
-    padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-  },
-  suppTitle: {
-    fontFamily: typography.fonts.semiBold,
-    fontSize: 18,
-    letterSpacing: 1,
-    marginBottom: 12,
+    fontSize: 13,
+    letterSpacing: 1.6,
   },
   suppRow: {
     flexDirection: 'row',
@@ -187,5 +193,5 @@ const styles = StyleSheet.create({
   suppValue: {
     fontFamily: typography.fonts.medium,
     fontSize: typography.sizes.sm,
-  }
+  },
 });

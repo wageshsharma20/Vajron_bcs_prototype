@@ -4,6 +4,7 @@ import { VideoView, VideoPlayer } from 'expo-video';
 import { MapPin } from 'lucide-react-native';
 import { useTheme, typography } from '../theme';
 import WaypointOverlay from './WaypointOverlay';
+import { useFittedFrame } from '../hooks/useFittedFrame';
 import { MAP_FRAME_ASPECT } from '../data/flightWaypoints';
 
 interface MissionMapViewProps {
@@ -24,12 +25,15 @@ interface MissionMapViewProps {
  */
 export default function MissionMapView({ player, isArmed, progress }: MissionMapViewProps) {
   const { theme } = useTheme();
+  const { onLayout, style: frameSize } = useFittedFrame(MAP_FRAME_ASPECT);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={onLayout}>
       {/* Same ratio lock as the planner: the markers are positioned as fractions
-          of this frame, so the video must fill it exactly rather than be cropped. */}
-      <View style={[styles.frame, { borderColor: theme.hairline }]}>
+          of this frame, so the video must fill it exactly rather than be cropped.
+          The frame is measured to the slot rather than declared at 100% width,
+          so a short slot shrinks it instead of clipping it. */}
+      <View style={[styles.frame, frameSize, { borderColor: theme.hairline }]}>
         <VideoView
           player={player}
           style={styles.video}
@@ -69,25 +73,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   frame: {
-    width: '100%',
-    aspectRatio: MAP_FRAME_ASPECT,
-    maxHeight: '100%',
     alignSelf: 'center',
     overflow: 'hidden',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     backgroundColor: '#0E1512',
   },
   badge: {
+    // Flush into the frame's corner as a plate rather than floating inset.
     position: 'absolute',
-    top: 6,
-    left: 6,
+    top: 0,
+    left: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
   badgeText: {

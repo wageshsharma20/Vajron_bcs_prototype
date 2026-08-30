@@ -1,35 +1,52 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Grid, MapPin, Radio, Wrench } from 'lucide-react-native';
+import { LayoutGrid, Route, Radar, Wrench } from 'lucide-react-native';
 import { useTheme, typography } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
- * Primary navigation.
+ * Primary navigation: a rail down the right edge.
  *
- * Rendered as chrome rather than as part of the page: it takes the variant's
- * brand surface, and the selected tab is marked by a solid top rule plus weight
- * and colour together, so the current section is not signalled by colour alone.
+ * The selected item is marked by a solid rule on the rail's inner edge, facing
+ * the content it selects, plus a shift in weight and colour — so the current
+ * section is never signalled by colour alone.
+ *
+ * The glyphs name the work rather than the furniture. A route line says a
+ * planned sortie where a map pin only said "map"; a radar sweep says a live
+ * picture where a broadcast mast only said "signal". Each is a thin,
+ * single-weight outline at one size, which is what keeps four of them in a
+ * column reading as one set.
  */
+const ITEMS: Record<string, { icon: typeof LayoutGrid; label: string }> = {
+  FleetDashboard: { icon: LayoutGrid, label: 'Fleet' },
+  MissionPlanner: { icon: Route, label: 'Plan' },
+  MissionControl: { icon: Radar, label: 'Live Ops' },
+  FleetMaintenance: { icon: Wrench, label: 'Service' },
+};
+
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const { theme, tokens } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <View
       style={[
-        styles.container,
+        styles.rail,
         {
+          width: tokens.navRailWidth,
+          paddingTop: insets.top + sp(26),
+          paddingBottom: insets.bottom + sp(20),
           backgroundColor: theme.brand,
-          borderTopColor: theme.brand,
-          paddingBottom: insets.bottom + 8,
         },
       ]}
     >
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
+        const item = ITEMS[route.name] ?? { icon: LayoutGrid, label: route.name };
+        const IconComponent = item.icon;
+        const color = isFocused ? theme.onBrand : theme.onBrandMuted;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -43,24 +60,6 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
           }
         };
 
-        let IconComponent = Grid;
-        let label = 'Fleet';
-        if (route.name === 'FleetDashboard') {
-          IconComponent = Grid;
-          label = 'Fleet';
-        } else if (route.name === 'MissionPlanner') {
-          IconComponent = MapPin;
-          label = 'Plan';
-        } else if (route.name === 'MissionControl') {
-          IconComponent = Radio;
-          label = 'Live Ops';
-        } else if (route.name === 'FleetMaintenance') {
-          IconComponent = Wrench;
-          label = 'Service';
-        }
-
-        const color = isFocused ? theme.onBrand : theme.onBrandMuted;
-
         return (
           <TouchableOpacity
             key={route.key}
@@ -68,41 +67,38 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
             accessibilityState={isFocused ? { selected: true } : {}}
             accessibilityLabel={options.tabBarAccessibilityLabel}
             onPress={onPress}
-            style={[styles.tabButton, { outlineStyle: 'none' } as any]}
+            style={[styles.item, { paddingVertical: sp(15) }, { outlineStyle: 'none' } as any]}
           >
-            {/* A solid marker above the selected tab, so selection is not carried
-                by colour alone. */}
+            {/* Marker on the inner edge, pointing back into the page. */}
             <View
-              style={[
-                styles.marker,
-                {
-                  backgroundColor: isFocused ? theme.onBrand : 'transparent',
-                  borderRadius: tokens.radius.sq,
-                },
-              ]}
+              style={{
+                width: tokens.rule.medium,
+                height: '58%',
+                alignSelf: 'flex-start',
+                backgroundColor: isFocused ? theme.onBrand : 'transparent',
+              }}
             />
-            <View style={styles.iconContainer}>
-              <IconComponent size={24} color={color} strokeWidth={isFocused ? 2.2 : 1.8} />
-              {route.name === 'MissionControl' && (
-                <View
-                  style={[
-                    styles.activeDot,
-                    { backgroundColor: theme.onBrand, borderColor: theme.brand },
-                  ]}
-                />
-              )}
+            <View style={styles.body}>
+              <View style={styles.iconWrap}>
+                <IconComponent size={21} color={color} strokeWidth={isFocused ? 1.6 : 1.2} />
+                {route.name === 'MissionControl' && (
+                  <View
+                    style={[styles.liveMark, { backgroundColor: theme.onBrand }]}
+                  />
+                )}
+              </View>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color,
+                    fontFamily: isFocused ? typography.fonts.semiBold : typography.fonts.regular,
+                  },
+                ]}
+              >
+                {item.label}
+              </Text>
             </View>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color,
-                  fontFamily: isFocused ? typography.fonts.semiBold : typography.fonts.medium,
-                },
-              ]}
-            >
-              {label}
-            </Text>
           </TouchableOpacity>
         );
       })}
@@ -111,38 +107,34 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 0,
+  rail: {
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
   },
-  tabButton: {
+  item: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  body: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    // 48px+ of vertical target, which keeps the touch area comfortable.
-    paddingBottom: 8,
   },
-  marker: {
-    width: '55%',
-    height: 3,
-    marginBottom: 9,
-  },
-  iconContainer: {
+  iconWrap: {
     position: 'relative',
-    marginBottom: 3,
+    marginBottom: 7,
+  },
+  liveMark: {
+    // A square tick rather than a dot: the only round shape left in the app is
+    // the record button, where a square would read as "stop".
+    position: 'absolute',
+    top: -3,
+    right: -5,
+    width: 4,
+    height: 4,
   },
   label: {
-    fontSize: 12,
-    letterSpacing: 0.3,
-  },
-  activeDot: {
-    position: 'absolute',
-    top: -2,
-    right: -4,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    borderWidth: 1.5,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
 });

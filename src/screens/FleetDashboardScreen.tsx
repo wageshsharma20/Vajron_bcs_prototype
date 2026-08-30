@@ -1,9 +1,8 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useTheme } from '../theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
-import { PageHeader, SectionHeading, Panel, useHeaderColors } from '../components/Chrome';
+import { Page, SectionHeading, useHeaderColors } from '../components/Chrome';
 import DroneStatusCard from '../components/DroneStatusCard';
 import CircularScore from '../components/CircularScore';
 import { mockDrones } from '../data/mockFleetData';
@@ -12,9 +11,8 @@ import { DroneAsset } from '../data/types';
 import type { DroneCardTelemetry } from '../components/DroneStatusCard';
 
 export default function FleetDashboardScreen({ navigation }: any) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const headerColors = useHeaderColors();
-  const insets = useSafeAreaInsets();
 
   const handleDronePress = (drone: DroneAsset) => {
     if (drone.status === 'in-flight') {
@@ -94,95 +92,100 @@ export default function FleetDashboardScreen({ navigation }: any) {
     };
   }, [drones, telemetryById]);
 
+  // The three readings run down a column of their own beside the roster rather
+  // than across a band above it. Nothing horizontal is spent on them, so the
+  // roster keeps the page's full height, and the hairlines between them say
+  // they are the same kind of measurement read the same way.
+  const summary = [
+    { score: readiness, label: 'Readiness' },
+    { score: avgBattery, label: 'Avg Battery' },
+    { score: avgLink, label: 'Link Quality' },
+  ];
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <PageHeader
-        title="FLEET OVERVIEW"
-        meta={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
-        subtitle={
-          <Text style={[styles.statusText, { color: headerColors.muted }]}>
-            {idleCount} IDLE  ·  
-            <Text style={{ color: inFlightCount > 0 ? headerColors.title : headerColors.muted }}> {inFlightCount} IN FLIGHT </Text>
-            ·  {chargingCount} CHARGING
+    <Page
+      title="FLEET OVERVIEW"
+      meta={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+      subtitle={
+        // Stacked rather than run together on one line: at spine width the
+        // single line broke mid-phrase, and three counts read as a key anyway.
+        <View>
+          <Text style={[styles.statusLine, { color: headerColors.muted }]}>{idleCount} IDLE</Text>
+          <Text
+            style={[
+              styles.statusLine,
+              { color: inFlightCount > 0 ? headerColors.title : headerColors.muted },
+            ]}
+          >
+            {inFlightCount} IN FLIGHT
           </Text>
-        }
-      />
+          <Text style={[styles.statusLine, { color: headerColors.muted }]}>
+            {chargingCount} CHARGING
+          </Text>
+        </View>
+      }
+    >
+      <View style={styles.split}>
+        <View
+          style={[
+            styles.summaryColumn,
+            { borderRightWidth: tokens.rule.hair, borderRightColor: theme.hairline },
+          ]}
+        >
+          {summary.map((cell, i) => (
+            <View
+              key={cell.label}
+              style={{
+                paddingVertical: sp(22),
+                paddingHorizontal: tokens.gutter,
+                alignItems: 'center',
+                borderBottomWidth: i < summary.length - 1 ? tokens.rule.hair : 0,
+                borderBottomColor: theme.hairline,
+              }}
+            >
+              <CircularScore
+                score={cell.score}
+                label={cell.label}
+                size={tokens.gaugeSize}
+                strokeWidth={Math.round(tokens.gaugeSize * 0.09)}
+              />
+            </View>
+          ))}
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Panel>
-          <View style={styles.summaryRow}>
-            <CircularScore score={readiness} label="Readiness" size={90} strokeWidth={8} />
-            <CircularScore score={avgBattery} label="Avg Battery" size={90} strokeWidth={8} />
-            <CircularScore score={avgLink} label="Link Quality" size={90} strokeWidth={8} />
-          </View>
-        </Panel>
-
-        <SectionHeading>Fleet</SectionHeading>
-        <Panel>
-          <View style={styles.listContainer}>
+        <View style={styles.rosterColumn}>
+          <SectionHeading first>Fleet</SectionHeading>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.gutter, paddingBottom: sp(32) }}>
             {drones.map(drone => (
-              <DroneStatusCard 
-                key={drone.id} 
-                drone={drone} 
+              <DroneStatusCard
+                key={drone.id}
+                drone={drone}
                 telemetry={telemetryById[drone.id]}
-                onPress={() => handleDronePress(drone)} 
+                onPress={() => handleDronePress(drone)}
               />
             ))}
-          </View>
-        </Panel>
-      </ScrollView>
-    </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Page>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: '100%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  headerTitle: {
-    fontFamily: typography.fonts.light,
-    fontSize: 27,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  headerDate: {
+  statusLine: {
     fontFamily: typography.fonts.semiBold,
-    fontSize: typography.sizes.sm,
-    letterSpacing: 0.5,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    lineHeight: 19,
   },
-  scrollContent: {
-    paddingTop: 12,
-    paddingBottom: 24,
-  },
-  statusStrip: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  statusText: {
-    fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.sm,
-    letterSpacing: 0.5,
-  },
-  summaryRow: {
+  split: {
+    flex: 1,
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 10,
-    paddingVertical: 16,
   },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    width: '100%',
-    marginBottom: 8,
+  summaryColumn: {
+    width: '30%',
   },
-  listContainer: {
-    paddingHorizontal: 16,
+  rosterColumn: {
+    flex: 1,
   },
 });

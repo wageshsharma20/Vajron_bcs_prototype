@@ -26,7 +26,7 @@ export default function ConfirmActionDialog({
 
   return (
     <Portal>
-      <Dialog visible={visible} onDismiss={onCancel} style={{ backgroundColor: theme.background, borderRadius: 8 }}>
+      <Dialog visible={visible} onDismiss={onCancel} style={{ backgroundColor: theme.background, borderRadius: 0 }}>
         <Dialog.Title style={[styles.title, { color: theme.textPrimary }]}>{title}</Dialog.Title>
         <Dialog.Content>
           <Text style={[styles.message, { color: theme.textSecondary }]}>{message}</Text>
@@ -42,7 +42,11 @@ export default function ConfirmActionDialog({
           <Button 
             mode="contained" 
             onPress={onConfirm} 
-            buttonColor={destructive ? theme.accentRed : theme.accentAmber}
+            // Amber here read as a caution on a dialog whose whole job is to
+            // confirm. A non-destructive confirm takes the brand, the same as
+            // every other affirmative control on the page; only a destructive
+            // one takes red.
+            buttonColor={destructive ? theme.accentRed : theme.brand}
             textColor="#FFFFFF"
             labelStyle={styles.buttonLabel}
             style={styles.confirmBtn}
@@ -70,12 +74,12 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   confirmBtn: {
-    borderRadius: 6,
+    borderRadius: 0,
     marginLeft: 8,
   },
   buttonLabel: {
     fontFamily: typography.fonts.semiBold,
-    fontSize: typography.sizes.sm,
-    letterSpacing: 0.5,
+    fontSize: 13,
+    letterSpacing: 0.8,
   }
 });

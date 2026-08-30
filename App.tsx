@@ -14,7 +14,6 @@ import {
 } from '@expo-google-fonts/noto-sans';
 
 import { lightTheme, ThemeProvider, useTheme } from './src/theme';
-import DesignVariantSwitcher from './src/components/DesignVariantSwitcher';
 import CustomTabBar from './src/components/CustomTabBar';
 
 import FleetDashboardScreen from './src/screens/FleetDashboardScreen';
@@ -98,9 +97,9 @@ export default function App() {
 }
 
 /**
- * Sits inside the provider so the navigation and Paper themes follow the active
- * design variant; reading the palette statically left half the chrome on the
- * default whichever variant was selected.
+ * Sits inside the provider so the navigator's own chrome follows the active
+ * layout — in particular where the tab bar is docked, which is a navigator
+ * option and cannot be decided from inside the tab bar component.
  */
 function AppShell() {
   const { theme } = useTheme();
@@ -125,14 +124,12 @@ function AppShell() {
     <SafeAreaProvider style={{ backgroundColor: theme.background }}>
       <PaperProvider theme={paperTheme}>
         <NavigationContainer theme={navigationTheme}>
+          {/* Navigation is a rail on the right; the masthead spine is on the
+              left, inside each screen. Both pieces of chrome are vertical, so
+              the working area keeps the full height of the display. */}
           <Tab.Navigator
-            tabBar={(props) => (
-              <>
-                <DesignVariantSwitcher />
-                <CustomTabBar {...props} />
-              </>
-            )}
-            screenOptions={{ headerShown: false }}
+            tabBar={(props) => <CustomTabBar {...props} />}
+            screenOptions={{ headerShown: false, tabBarPosition: 'right' }}
           >
             <Tab.Screen name="FleetDashboard" component={FleetDashboardScreen} />
             <Tab.Screen name="MissionPlanner" component={MissionPlannerScreen} />

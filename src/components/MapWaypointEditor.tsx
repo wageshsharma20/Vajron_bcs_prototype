@@ -5,6 +5,7 @@ import { Waypoint } from '../data/types';
 import { typography } from '../theme';
 import WaypointOverlay, { PlaceableWaypoint } from './WaypointOverlay';
 import { FLIGHT_WAYPOINTS, MAP_FRAME_ASPECT } from '../data/flightWaypoints';
+import { useFittedFrame } from '../hooks/useFittedFrame';
 
 interface MapWaypointEditorProps {
   waypoints: Waypoint[];
@@ -29,6 +30,7 @@ export interface MapWaypointEditorRef {
 const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProps>(
   ({ waypoints, onWaypointsChange, defaultAltitude = 30 }, ref) => {
     const { theme } = useTheme();
+    const { onLayout, style: frameSize } = useFittedFrame(MAP_FRAME_ASPECT);
 
     useImperativeHandle(ref, () => ({
       addWaypoint: (lat: number, lng: number) => {
@@ -53,10 +55,11 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
     });
 
     return (
-      <View style={styles.container}>
+      <View style={styles.container} onLayout={onLayout}>
         {/* Locked to the source frame's ratio so the still and the markers share
-            one coordinate space; the slot around it just centres this. */}
-        <View style={[styles.frame, { borderColor: theme.hairline }]}>
+            one coordinate space; measured against the slot so it fits whichever
+            of the two dimensions is the tighter one. */}
+        <View style={[styles.frame, frameSize, { borderColor: theme.hairline }]}>
           {/* Sized explicitly rather than with absoluteFill: on web the Image
               keeps its intrinsic 832x336 box under absoluteFill and simply gets
               clipped by the frame, which slides the map under the markers. */}
@@ -88,7 +91,10 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    // Top-aligned, not centred: the map is the left column of a two-column page,
+    // so its first edge should start on the same line as the sidebar's first
+    // field rather than floating in the middle of its half.
+    justifyContent: 'flex-start',
   },
   mapImage: {
     position: 'absolute',
@@ -98,22 +104,19 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   frame: {
-    width: '100%',
-    aspectRatio: MAP_FRAME_ASPECT,
-    maxHeight: '100%',
     alignSelf: 'center',
     overflow: 'hidden',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     backgroundColor: '#0E1512',
   },
   badge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 4,
+    // Flush into the frame's corner as a plate rather than floating inset: the
+    // frame's own edge does the containing, so the label needs no second one.
+    top: 0,
+    left: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
   badgeText: {

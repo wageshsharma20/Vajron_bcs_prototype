@@ -1,13 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  StyleSheet,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-  Animated,
-  Pressable
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable } from 'react-native';
 import {
   Trees,
   Leaf,
@@ -25,10 +17,6 @@ import { Text } from 'react-native-paper';
 import { useTheme, typography } from '../theme';
 import { InspectionCategory } from '../types';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 export interface InspectionAccordionProps {
   data: InspectionCategory;
   index: number;
@@ -39,30 +27,13 @@ const iconMap: Record<string, any> = {
 };
 
 export default function InspectionAccordion({ data, index }: InspectionAccordionProps) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const [expanded, setExpanded] = useState(index === 0);
-  
-  // Minimal enter animation
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 600,
-      delay: index * 100,
-      useNativeDriver: true,
-    }).start();
-  }, [index, fadeAnim]);
-
-  const toggleExpand = () => {
-    setExpanded(!expanded);
-    Animated.timing(rotateAnim, {
-      toValue: expanded ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
+  // The two Animated.Values that used to live here drove nothing: neither was
+  // ever bound to a style, so the mount fade and the chevron spin were only
+  // ever timers. Dropping them leaves the rendering exactly as it was.
+  const toggleExpand = () => setExpanded(!expanded);
 
   const IconComponent = iconMap[data.iconName] || Wrench;
 
@@ -90,16 +61,14 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
   const statusColor = issueCount > 0 ? getStatusColor(highestSeverity) : theme.statusGreen;
   const badgeText = issueCount > 0 ? `${issueCount} ISSUE${issueCount > 1 ? 'S' : ''}` : 'ALL CLEAR';
 
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg']
-  });
-
   return (
-    <View style={[styles.container, { borderBottomColor: theme.hairline }]}>
-      <Pressable onPress={toggleExpand} style={styles.header}>
+    <View style={[styles.container, { borderBottomColor: theme.hairline, borderBottomWidth: tokens.rule.hair }]}>
+      <Pressable
+        onPress={toggleExpand}
+        style={[styles.header, { paddingHorizontal: tokens.gutter, paddingVertical: sp(16) }]}
+      >
         <View style={styles.headerLeft}>
-          <IconComponent size={22} color={theme.textPrimary} strokeWidth={1.5} />
+          <IconComponent size={18} color={theme.textSecondary} strokeWidth={1.3} />
           <Text style={[styles.categoryName, { color: theme.textPrimary }]}>
             {data.category}
           </Text>
@@ -108,17 +77,21 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
           <Text style={[styles.badgeText, { color: statusColor }]}>
             {badgeText}
           </Text>
+          {/* One stroke weight and one size across every glyph in the row. The
+              three used to run 1.5 / 1.5 / 1 at 22 / 24 / 22, which made the
+              download read as the heaviest thing in a row where it is the least
+              important. */}
           <Pressable onPress={(e) => { e.stopPropagation(); /* Implement download logic */ }}>
-            <Download size={24} color={theme.textSecondary} strokeWidth={1.5} />
+            <Download size={18} color={theme.textSecondary} strokeWidth={1.3} />
           </Pressable>
           <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-            <ChevronDown size={22} color={theme.textSecondary} strokeWidth={1} />
+            <ChevronDown size={18} color={theme.textSecondary} strokeWidth={1.3} />
           </View>
         </View>
       </Pressable>
 
       {expanded && (
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingHorizontal: tokens.gutter, paddingBottom: sp(18) }]}>
           {data.items.map((item, idx) => {
             const isItemIssue = item.status !== 'good';
             const itemColor = getStatusColor(item.status);
@@ -145,49 +118,47 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
 
 const styles = StyleSheet.create({
   container: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 12,
+    // The row's own padding supplies the air; the container adding more on top
+    // of it was what made the closed rows twice as tall as the open ones.
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
     flex: 1,
     paddingRight: 16,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 18,
   },
   categoryName: {
-    fontFamily: typography.fonts.light, // Zen thin text
-    fontSize: 23,
-    letterSpacing: -0.5,
+    fontFamily: typography.fonts.regular,
+    fontSize: typography.sizes.md,
+    letterSpacing: -0.2,
   },
   badgeText: {
-    fontFamily: typography.fonts.medium,
-    fontSize: 17,
-    letterSpacing: 1.2,
+    // The same status-caps used in the fleet roster and the pre-flight checks,
+    // so "1 ISSUE" reads as a state rather than as a second heading.
+    fontFamily: typography.fonts.bold,
+    fontSize: 10,
+    letterSpacing: 1.6,
   },
   content: {
-    paddingBottom: 16,
-    paddingTop: 8,
-    gap: 8,
-    paddingHorizontal: 20,
+    paddingTop: 2,
+    gap: 10,
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingLeft: 32, // Indent content to align with text
+    paddingLeft: 38, // Indent content to align with the heading's text, past its icon
   },
   itemLeft: {
     flexDirection: 'row',
@@ -195,19 +166,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   issueDot: {
+    // A square tick in the margin rather than a dot, matching the fleet list's
+    // hanging status marker.
     width: 4,
     height: 4,
-    borderRadius: 2,
     position: 'absolute',
-    left: -12,
+    left: -14,
   },
   itemName: {
     fontFamily: typography.fonts.regular,
-    fontSize: 19,
+    // Matched to the Service Schedule rows directly beneath these, which were
+    // already at this size — the two tables sat in one column at 19 and 16.
+    fontSize: typography.sizes.sm,
   },
   itemValue: {
-    fontFamily: typography.fonts.regular,
-    fontSize: 19,
+    fontFamily: typography.fonts.medium,
+    fontSize: typography.sizes.sm,
     flex: 1,
     textAlign: 'right',
   },

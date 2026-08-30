@@ -1,17 +1,17 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { useTheme } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../theme';
 import MapWaypointEditor, { MapWaypointEditorRef } from '../components/MapWaypointEditor';
 import PreFlightChecklist from '../components/PreFlightChecklist';
 import { Waypoint, PreFlightCheck } from '../data/types';
-import { PageHeader, useHeaderColors } from '../components/Chrome';
+import { Page, useHeaderColors, Rule } from '../components/Chrome';
 import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
 import { generateSurveyGrid } from '../data/missionUtils';
 
 export default function MissionPlannerScreen({ navigation }: any) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const headerColors = useHeaderColors();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapWaypointEditorRef>(null);
@@ -50,112 +50,136 @@ export default function MissionPlannerScreen({ navigation }: any) {
     navigation.navigate('MissionControl', { droneId: 'DRONE-01' }); // Mock default
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <PageHeader
-        title="MISSION PLANNER"
-        subtitle={
-          <Text style={[styles.headerSubtitle, { color: headerColors.muted }]}>Park: Sanjay Van  ·  DRONE-01</Text>
-        }
+  // Parameters on the left, map on the right. The sidebar's controls read
+  // top-to-bottom in the order the operator works through them — set the
+  // figures, generate or clear the route, then run the checks — and the map
+  // fills whatever width is left.
+  const map = (
+    <View style={[styles.mapContainer, { padding: tokens.gutter }]}>
+      <MapWaypointEditor 
+        ref={mapRef}
+        waypoints={waypoints}
+        onWaypointsChange={setWaypoints}
+        defaultAltitude={parseInt(altitude) || 30}
       />
 
-      <View style={styles.contentRow}>
-        <View style={styles.mapContainer}>
-          <MapWaypointEditor 
-            ref={mapRef}
-            waypoints={waypoints}
-            onWaypointsChange={setWaypoints}
-            defaultAltitude={parseInt(altitude) || 30}
-          />
-
-          {showChecklist && (
-            <View style={styles.checklistOverlay}>
-              <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} />
-            </View>
-          )}
+      {showChecklist && (
+        <View style={styles.checklistOverlay}>
+          <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} />
         </View>
+      )}
+    </View>
+  );
 
-        {/* Sidebar */}
-        <View style={[styles.sidebar, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 60, borderLeftColor: theme.hairline }]}>
-          <View style={styles.paramsRow}>
-            <View style={styles.paramInputGroup}>
-              <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>ALT (m)</Text>
-              <TextInput 
-                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
-                value={altitude}
-                onChangeText={setAltitude}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.paramInputGroup}>
-              <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>SPD (m/s)</Text>
-              <TextInput 
-                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
-                value={speed}
-                onChangeText={setSpeed}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.paramInputGroup}>
-              <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>OVERLAP %</Text>
-              <TextInput 
-                style={[styles.paramInput, { color: theme.textPrimary, borderColor: theme.hairline }]}
-                value={overlap}
-                onChangeText={setOverlap}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
+  const field = (
+    label: string,
+    value: string,
+    onChange: (v: string) => void,
+    last = false,
+  ) => (
+    <View style={[styles.paramInputGroup, last ? null : { marginRight: sp(20) }]}>
+      <Text style={[styles.paramLabel, { color: theme.textSecondary }]}>{label}</Text>
+      <TextInput 
+        style={[
+          styles.paramInput,
+          {
+            color: theme.textPrimary,
+            borderBottomColor: theme.textPrimary,
+            borderBottomWidth: tokens.rule.medium,
+          },
+        ]}
+        value={value}
+        onChangeText={onChange}
+        keyboardType="numeric"
+      />
+    </View>
+  );
 
-          <View style={styles.actionRowSecondary}>
-            <TouchableOpacity onPress={() => mapRef.current?.clearWaypoints()} style={styles.textLinkBtn}>
-              <Text style={[styles.textLink, { color: theme.textSecondary }]}>Clear Map</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.secondaryBtn, { borderColor: theme.hairline }]} onPress={handleSurveyGrid}>
-              <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
-            </TouchableOpacity>
-          </View>
+  const sidebar = (
+    <View
+      style={[
+        styles.sidebar,
+        {
+          paddingHorizontal: tokens.gutter,
+          paddingTop: tokens.gutter,
+          paddingBottom: insets.bottom + sp(24),
+          borderRightWidth: tokens.rule.hair,
+          borderRightColor: theme.hairline,
+        },
+      ]}
+    >
+      {/* Fields are ruled underneath rather than boxed: a full outline round a
+          three-character number is more frame than content, and three of them
+          in a row read as three buttons. The rule is the field. */}
+      <View style={[styles.paramsRow, { marginBottom: sp(22) }]}>
+        {field('ALT (m)', altitude, setAltitude)}
+        {field('SPD (m/s)', speed, setSpeed)}
+        {field('OVERLAP %', overlap, setOverlap, true)}
+      </View>
 
-          <View style={styles.checklistContainer}>
-            <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} isLaunchDisabled={waypoints.length === 0} />
-          </View>
-        </View>
+      <View style={styles.actionRowSecondary}>
+        <TouchableOpacity onPress={() => mapRef.current?.clearWaypoints()} style={styles.textLinkBtn}>
+          <Text style={[styles.textLink, { color: theme.textSecondary }]}>Clear Map</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.secondaryBtn,
+            {
+              borderColor: theme.textPrimary,
+              borderWidth: tokens.rule.hair,
+              paddingVertical: sp(11),
+              paddingHorizontal: sp(20),
+            },
+          ]}
+          onPress={handleSurveyGrid}
+        >
+          <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Rule weight="medium" style={{ marginTop: sp(16) }} />
+
+      <View style={styles.checklistContainer}>
+        <PreFlightChecklist checks={mockChecks} onLaunch={handleLaunch} isLaunchDisabled={waypoints.length === 0} />
       </View>
     </View>
+  );
+
+  return (
+    <Page
+      title="MISSION PLANNER"
+      subtitle={
+        <View>
+          <Text style={[styles.headerSubtitle, { color: headerColors.muted }]}>PARK: SANJAY VAN</Text>
+          <Text style={[styles.headerSubtitle, { color: headerColors.muted }]}>DRONE-01</Text>
+        </View>
+      }
+    >
+      <View style={styles.contentRow}>
+        {sidebar}
+        {map}
+      </View>
+    </Page>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerTitle: {
-    fontFamily: typography.fonts.light,
-    fontSize: 31,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
   headerSubtitle: {
-    fontFamily: typography.fonts.medium,
-    fontSize: typography.sizes.sm,
-    marginTop: 2,
+    fontFamily: typography.fonts.semiBold,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    lineHeight: 19,
   },
   contentRow: {
     flex: 1,
     flexDirection: 'row',
   },
+  sidebar: {
+    width: '44%',
+  },
   mapContainer: {
-    width: '50%',
+    flex: 1,
     position: 'relative',
-    padding: 20,
   },
   checklistOverlay: {
     position: 'absolute',
@@ -163,45 +187,36 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
-  sidebar: {
-    width: '50%',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    borderLeftWidth: StyleSheet.hairlineWidth,
-  },
   paramsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
   },
   paramInputGroup: {
     flex: 1,
-    marginHorizontal: 4,
   },
   paramLabel: {
     fontFamily: typography.fonts.bold,
-    fontSize: 18,
-    marginBottom: 4,
-    textAlign: 'center',
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
   paramInput: {
-    borderWidth: 1,
-    borderRadius: 4,
     paddingVertical: 6,
-    textAlign: 'center',
     fontFamily: typography.fonts.medium,
     fontSize: typography.sizes.sm,
     fontVariant: typography.tabularNums,
-  },
+    outlineStyle: 'none',
+  } as any,
   actionRowSecondary: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
   textLinkBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    // Flush to the sidebar gutter, so the link starts on the same edge as the
+    // field labels above it.
+    paddingRight: 8,
   },
   textLink: {
     fontFamily: typography.fonts.medium,
@@ -209,18 +224,14 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   secondaryBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
     alignItems: 'center',
   },
   secondaryBtnText: {
     fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.xs,
-    letterSpacing: 0.5,
+    fontSize: 12,
+    letterSpacing: 1.1,
   },
   checklistContainer: {
-    marginTop: 8,
-  }
+    marginTop: 4,
+  },
 });

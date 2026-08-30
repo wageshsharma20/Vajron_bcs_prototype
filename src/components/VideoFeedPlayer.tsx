@@ -4,10 +4,11 @@ import { VideoView, VideoPlayer } from 'expo-video';
 import { useTheme } from '../theme';
 import { TelemetryFrame } from '../data/types';
 import { typography } from '../theme';
+import { useFittedFrame } from '../hooks/useFittedFrame';
 
 /** The camera source is 832x384; framing to it shows the whole picture without
  * either letterboxing the box or cropping the sides away to fill it. */
-const FEED_ASPECT = 832 / 384;
+export const FEED_ASPECT = 832 / 384;
 
 interface VideoFeedPlayerProps {
   telemetry: TelemetryFrame | null;
@@ -18,10 +19,13 @@ interface VideoFeedPlayerProps {
 
 export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFeedPlayerProps) {
   const { theme } = useTheme();
+  // Measured to the slot rather than declared at 100% width, so a short slot
+  // shrinks the frame instead of clipping the picture inside it.
+  const { onLayout, style: frameSize } = useFittedFrame(FEED_ASPECT);
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.frame, { backgroundColor: '#1A1A1A' }]}>
+    <View style={styles.container} onLayout={onLayout}>
+      <View style={[styles.frame, frameSize, { backgroundColor: '#1A1A1A' }]}>
       <VideoView
         player={player}
         style={styles.video}
@@ -74,12 +78,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   frame: {
-    width: '100%',
-    aspectRatio: FEED_ASPECT,
-    maxHeight: '100%',
     alignSelf: 'center',
     overflow: 'hidden',
-    borderRadius: 8,
   },
   standbyVeil: {
     ...StyleSheet.absoluteFill,
@@ -100,9 +100,10 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   overlay: {
+    // Flush into the frame's corner, matching the map's corner plate.
     position: 'absolute',
     bottom: 8,
-    left: 8,
+    left: 10,
   },
   liveRow: {
     flexDirection: 'row',

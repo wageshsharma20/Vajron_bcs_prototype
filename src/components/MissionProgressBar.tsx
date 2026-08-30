@@ -8,12 +8,12 @@ interface MissionProgressBarProps {
 }
 
 export default function MissionProgressBar({ totalWaypoints, currentWaypoint }: MissionProgressBarProps) {
-  const { theme } = useTheme();
+  const { theme, sp } = useTheme();
   const progress = totalWaypoints > 0 ? Math.min(1, currentWaypoint / totalWaypoints) : 0;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.labelRow}>
+    <View style={[styles.container, { paddingVertical: sp(10) }]}>
+      <View style={[styles.labelRow, { marginBottom: sp(8) }]}>
         <Text style={[styles.label, { color: theme.textSecondary }]}>
           WAYPOINT {currentWaypoint} / {totalWaypoints}
         </Text>
@@ -30,13 +30,12 @@ export default function MissionProgressBar({ totalWaypoints, currentWaypoint }: 
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    // Horizontal padding is supplied by the section it sits in, so the bar runs
+    // the full width of that column instead of insetting itself a second time.
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
   },
   label: {
     fontFamily: typography.fonts.medium,
@@ -45,13 +44,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   track: {
-    height: 4,
-    borderRadius: 2,
+    height: 6,
     width: '100%',
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: 2,
   }
 });

@@ -28,12 +28,14 @@ function timeAgo(isoString: string) {
 }
 
 export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStatusCardProps) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
 
   const getStatusColor = () => {
     switch (drone.status) {
       case 'in-flight': return theme.statusGreen;
       case 'idle': return theme.textSecondary;
+      // Offline and idle share a colour deliberately: neither is a fault, and
+      // giving "nothing is happening" its own hue would imply otherwise.
       case 'charging': return theme.accentAmber;
       case 'maintenance': return theme.accentRed;
       case 'offline': default: return theme.textSecondary;
@@ -43,24 +45,30 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
   const statusColor = getStatusColor();
 
   return (
-    <TouchableOpacity style={[styles.container, { borderBottomColor: theme.hairline }]} onPress={onPress}>
+    <TouchableOpacity
+      style={[
+        styles.container,
+        { borderBottomColor: theme.hairline, borderBottomWidth: tokens.rule.hair, paddingVertical: sp(18) },
+      ]}
+      onPress={onPress}
+    >
+      {/* The status marker hangs in the gutter as a rule rather than sitting
+          inline as a dot, so the row's text keeps one unbroken left edge and
+          the marker still reads down the list as a column of its own. */}
+      <View style={[styles.marker, { backgroundColor: statusColor }]} />
+
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <View style={[styles.dot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.title, { color: theme.textPrimary }]}>{drone.id}</Text>
-        </View>
-        
-        {/* Static. The in-flight badge used to pulse, which is decorative motion
-            on a status an operator reads rather than an alert. */}
-        {drone.status === 'in-flight' ? (
-          <View style={[styles.badge, { backgroundColor: theme.surfaceMuted, borderLeftWidth: 2, borderLeftColor: theme.statusGreen }]}>
-            <Text style={[styles.badgeText, { color: theme.textPrimary }]}>IN FLIGHT</Text>
-          </View>
-        ) : (
-          <View style={[styles.badge, { backgroundColor: theme.surfaceMuted }]}>
-            <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{drone.status.toUpperCase()}</Text>
-          </View>
-        )}
+        <Text style={[styles.title, { color: theme.textPrimary }]}>{drone.id}</Text>
+
+        {/* Set as a word in the status colour rather than a filled chip. The
+            chip was a box on a page that has no other boxes, and it made four
+            grey pills the loudest thing in the roster; the marker in the gutter
+            and the tracked caps carry the same state with less furniture.
+            Static — the in-flight badge used to pulse, which is decorative
+            motion on a status an operator reads rather than an alert. */}
+        <Text style={[styles.badgeText, { color: statusColor }]}>
+          {drone.status === 'in-flight' ? 'IN FLIGHT' : drone.status.toUpperCase()}
+        </Text>
       </View>
 
       <Text style={[styles.model, { color: theme.textSecondary }]}>{drone.model}</Text>
@@ -96,44 +104,38 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    // Rows carry no background and no outline; the hairline beneath and the air
+    // above and below are the whole separation.
+    position: 'relative',
+  },
+  marker: {
+    position: 'absolute',
+    // Sits outside the text column, in the page gutter.
+    left: -12,
+    top: 20,
+    width: 3,
+    height: 14,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
+    marginBottom: 5,
   },
   title: {
     fontFamily: typography.fonts.bold,
     fontSize: typography.sizes.base,
     letterSpacing: -0.3,
   },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
   badgeText: {
     fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.xs,
-    letterSpacing: 0.5,
+    fontSize: 10,
+    letterSpacing: 1.6,
   },
   model: {
     fontFamily: typography.fonts.regular,
     fontSize: typography.sizes.sm,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   metricsRow: {
     flexDirection: 'row',

@@ -1,52 +1,26 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../theme';
-import { Camera, Video } from 'lucide-react-native';
+import { Camera, Minus, Plus } from 'lucide-react-native';
 import { typography } from '../theme';
 
 interface GimbalControlPadProps {
+  /**
+   * Not driven by anything on this pad. The joystick that would have called it
+   * was a placeholder — react-native-joystick does not export the component it
+   * was written against — and has been removed. The prop stays because slewing
+   * is a real gimbal capability the pad will need, but nothing here slews yet.
+   */
   onPanTilt: (pitch: number, yaw: number) => void;
   onZoom: (zoomLevel: number) => void;
   onPhoto: () => void;
   onRecordToggle: () => void;
 }
 
-// Mock Joystick to prevent crashes since 'react-native-joystick' doesn't export <Joystick>
-const MockJoystick = ({ color, radius }: { color: string, radius: number }) => (
-  <View style={{
-    width: radius * 2,
-    height: radius * 2,
-    borderRadius: radius,
-    backgroundColor: color + '40', // 25% opacity
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: color
-  }}>
-    <View style={{
-      width: radius * 0.8,
-      height: radius * 0.8,
-      borderRadius: radius * 0.4,
-      backgroundColor: color
-    }} />
-  </View>
-);
-
 export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordToggle }: GimbalControlPadProps) {
-  const { theme } = useTheme();
+  const { theme, tokens, sp } = useTheme();
   const [isRecording, setIsRecording] = useState(false);
   const [zoom, setZoom] = useState(1);
-
-  const handleJoystick = (data: any) => {
-    // data contains type: 'move' | 'stop', position: { x, y }, force, angle
-    if (data.type === 'move') {
-      const yawRate = (data.position.x / 50); 
-      const pitchRate = -(data.position.y / 50);
-      onPanTilt(pitchRate, yawRate);
-    } else if (data.type === 'stop') {
-      onPanTilt(0, 0);
-    }
-  };
 
   const handleRecord = () => {
     setIsRecording(!isRecording);
@@ -61,29 +35,62 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
 
   return (
     <View style={styles.outerContainer}>
-      <Text style={[styles.panelTitle, { color: theme.textSecondary }]}>CAMERA CONTROLS</Text>
-      <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.hairline }]}>
-        <View style={styles.singleRow}>
-          
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.surfaceLight }]} onPress={onPhoto}>
-            <Camera size={26} color={theme.textPrimary} />
+      <Text style={[styles.panelTitle, { color: theme.textSecondary, marginBottom: sp(14) }]}>
+        CAMERA CONTROLS
+      </Text>
+
+      {/* No panel around the controls. The page separates content with rules,
+          so an outlined, tinted box here was a third way of saying "these
+          belong together" on top of the heading and the vertical rule that
+          already divide this column from the readings. */}
+      <View style={styles.singleRow}>
+        <TouchableOpacity
+          style={[styles.actionBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair }]}
+          onPress={onPhoto}
+          accessibilityRole="button"
+          accessibilityLabel="Capture photo"
+        >
+          <Camera size={17} color={theme.textPrimary} strokeWidth={1.3} />
+        </TouchableOpacity>
+
+        <View style={styles.zoomRow}>
+          <TouchableOpacity
+            style={[styles.zoomBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair }]}
+            onPress={() => adjustZoom(-1)}
+            accessibilityRole="button"
+            accessibilityLabel="Zoom out"
+          >
+            {/* Drawn glyphs rather than typed "-" and "+": the hyphen sat above
+                the optical centre and never matched the plus in weight. */}
+            <Minus size={15} color={theme.textPrimary} strokeWidth={1.4} />
           </TouchableOpacity>
-
-          <View style={styles.zoomRow}>
-            <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.hairline }]} onPress={() => adjustZoom(-1)}>
-              <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>-</Text>
-            </TouchableOpacity>
-            <Text style={[styles.zoomText, { color: theme.textPrimary }]}>{zoom}x</Text>
-            <TouchableOpacity style={[styles.zoomBtn, { borderColor: theme.hairline }]} onPress={() => adjustZoom(1)}>
-              <Text style={[styles.zoomBtnText, { color: theme.textPrimary }]}>+</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isRecording ? theme.accentRed : theme.surfaceLight }]} onPress={handleRecord}>
-            <View style={[styles.recordCircle, { backgroundColor: isRecording ? '#FFF' : theme.accentRed }]} />
+          <Text style={[styles.zoomText, { color: theme.textPrimary }]}>{zoom}x</Text>
+          <TouchableOpacity
+            style={[styles.zoomBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair }]}
+            onPress={() => adjustZoom(1)}
+            accessibilityRole="button"
+            accessibilityLabel="Zoom in"
+          >
+            <Plus size={15} color={theme.textPrimary} strokeWidth={1.4} />
           </TouchableOpacity>
-
         </View>
+
+        <TouchableOpacity
+          style={[
+            styles.actionBtn,
+            {
+              borderColor: isRecording ? theme.accentRed : theme.hairline,
+              borderWidth: tokens.rule.hair,
+              backgroundColor: isRecording ? theme.accentRed : 'transparent',
+            },
+          ]}
+          onPress={handleRecord}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isRecording }}
+          accessibilityLabel={isRecording ? 'Stop recording' : 'Start recording'}
+        >
+          <View style={[styles.recordCircle, { backgroundColor: isRecording ? '#FFF' : theme.accentRed }]} />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -91,20 +98,13 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
 
 const styles = StyleSheet.create({
   outerContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 4,
+    // Padding comes from the row this sits in, so the pad lines up with the
+    // telemetry grid beside it instead of insetting itself again.
   },
   panelTitle: {
-    fontFamily: typography.fonts.semiBold,
-    fontSize: 15,
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  container: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
+    fontFamily: typography.fonts.bold,
+    fontSize: 10,
+    letterSpacing: 1.6,
   },
   singleRow: {
     flexDirection: 'row',
@@ -118,35 +118,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   zoomBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 12,
   },
-  zoomBtnText: {
-    fontFamily: typography.fonts.regular,
-    fontSize: 23,
-    marginTop: -2,
-  },
   zoomText: {
-    fontFamily: typography.fonts.bold,
+    fontFamily: typography.fonts.semiBold,
     fontSize: typography.sizes.sm,
-    width: 28,
+    width: 34,
     textAlign: 'center',
+    fontVariant: typography.tabularNums,
   },
   actionBtn: {
-    width: 44,
-    height: 36,
-    borderRadius: 8,
+    // Square and the same 34pt as the zoom controls, so all four targets in the
+    // row are one size instead of two.
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
   recordCircle: {
-    width: 12,
-    height: 12,
+    // The one deliberate curve left in the app: a square here reads as "stop",
+    // which is the opposite of what this control does.
+    width: 11,
+    height: 11,
     borderRadius: 6,
   }
 });

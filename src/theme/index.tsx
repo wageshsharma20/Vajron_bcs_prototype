@@ -1,25 +1,20 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React from 'react';
 
 /**
  * Design system for the GCS.
  *
- * Three variants of one government-grade system, not three unrelated skins:
- * they share the type scale, the status ramps and the component vocabulary, and
- * differ in the things that actually change how an interface reads — chrome
- * treatment, corner language, rule weight and density.
+ * One palette, one type scale, one set of status ramps, square corners, and
+ * rules instead of boxes. Nothing below may introduce a colour, a face or a
+ * shape that is not defined here.
  *
- *   secretariat  formal record. White page, deep green chrome, square corners,
- *                visible rules, tight rows. Reads like an official register.
- *   seva         citizen-facing service. Pale green page with white cards,
- *                softer corners, generous spacing, lighter rules.
- *   control      operations console. Near-black chrome over a white working
- *                area, small radii, tight tabular rows, strong status chips.
+ * The layout is a spine and a rail: the masthead rotated ninety degrees into a
+ * fixed column down the left edge, navigation as a rail down the right. Both
+ * pieces of chrome are vertical, so no horizontal band is spent on either and
+ * the whole middle of the screen belongs to content.
  *
- * Everything is a token. Components must not hardcode colour, spacing or radius,
- * or a variant switch will only reach half the screen.
+ * Everything is a token. Components must not hardcode colour, spacing or rule
+ * weight, or a change here will only reach half the screen.
  */
-
-export type DesignVariant = 'secretariat' | 'seva' | 'control';
 
 export const typography = {
   fonts: {
@@ -55,8 +50,9 @@ export const spacing = {
 } as const;
 
 export const layout = {
-  radius: 8,
-  radiusSm: 4,
+  // Square throughout: see LayoutTokens.radius.
+  radius: 0,
+  radiusSm: 0,
   hairline: 1,
 } as const;
 
@@ -73,7 +69,7 @@ export type ColorTheme = {
   border: string;
   overlay: string;
 
-  /** Chrome: the header and tab bar. */
+  /** Chrome: the spine and the navigation rail. */
   brand: string;
   onBrand: string;
   onBrandMuted: string;
@@ -88,18 +84,75 @@ export type ColorTheme = {
   accentRedMuted: string;
 };
 
-export type DesignTokens = {
-  id: DesignVariant;
-  /** Shown only in the design switcher, never in application content. */
-  label: string;
-  color: ColorTheme;
-  radius: { sq: number; sm: number; md: number; lg: number };
-  /** Multiplier on the shared spacing scale, so density is a variant decision. */
+/** Near-black chrome over a white working area. */
+export const PALETTE: ColorTheme = {
+  background: '#FFFFFF',
+  surface: '#F7F9F8',
+  surfaceMuted: '#EDF1EE',
+  surfaceLight: '#EDF1EE',
+  textPrimary: '#0B0E0C',
+  textSecondary: '#5A665E',
+  hairline: '#DCE3DE',
+  border: '#DCE3DE',
+  overlay: 'rgba(11, 14, 12, 0.6)',
+  brand: '#111614',
+  onBrand: '#FFFFFF',
+  onBrandMuted: '#9FB0A6',
+  brandAccent: '#2E7D51',
+  statusGreen: '#22603C',
+  statusGreenMuted: '#E9F1EC',
+  accentAmber: '#8F5A14',
+  accentAmberMuted: '#F6EFE1',
+  accentRed: '#8F2C22',
+  accentRedMuted: '#F8EAE8',
+};
+
+/** Backwards-compatible export: several modules already read this name. */
+export const lightTheme: ColorTheme = PALETTE;
+
+export type LayoutTokens = {
+  /** Width of the masthead spine down the left edge. */
+  spineWidth: number;
+  /** Width of the navigation rail down the right edge. */
+  navRailWidth: number;
+  /**
+   * The single page gutter. Everything in the working area aligns to it —
+   * headings, rows, controls — so the eye reads one continuous left edge down
+   * the page rather than several competing ones.
+   */
+  gutter: number;
+  /** Multiplier on the shared spacing scale. */
   density: number;
-  /** Whether section headings are set in caps with tracking. */
-  capsSections: boolean;
-  /** Rule weight between rows and around panels. */
-  ruleWidth: number;
+  /**
+   * Corner radii, held at zero. The design is built on rules and right angles,
+   * and a rounded corner is the one thing that reads as soft against them. Kept
+   * as tokens rather than deleted so the value lives in one place, not thirty.
+   */
+  radius: { sq: number; sm: number; md: number; lg: number };
+  /**
+   * Rule weights. Content is separated with lines rather than boxes, shadows or
+   * fills, so weight is what carries hierarchy: a hair between rows of the same
+   * kind, a thick rule between whole subjects.
+   */
+  rule: { hair: number; thin: number; medium: number; thick: number };
+  /** Diameter of the fleet summary gauges — how loudly the fleet score speaks. */
+  gaugeSize: number;
+  /**
+   * How the camera feed and the map divide the width of the picture row. The
+   * feed is the operator's eye on the aircraft, so it takes the larger share.
+   */
+  mediaSplit: { feed: number; map: number };
+};
+
+export const tokens: LayoutTokens = {
+  spineWidth: 208,
+  navRailWidth: 92,
+  gutter: 28,
+  density: 1.05,
+  radius: { sq: 0, sm: 0, md: 0, lg: 0 },
+  rule: { hair: 1, thin: 1, medium: 2, thick: 4 },
+  gaugeSize: 92,
+  mediaSplit: { feed: 1.8, map: 1 },
 };
 
 /**
@@ -155,139 +208,23 @@ export function bandFor(value: number): StatusKey {
   return 'red';
 }
 
-const SECRETARIAT: DesignTokens = {
-  id: 'secretariat',
-  label: 'Secretariat',
-  color: {
-    background: '#FFFFFF',
-    surface: '#F4F7F4',
-    surfaceMuted: '#E6EDE7',
-    surfaceLight: '#E6EDE7',
-    textPrimary: '#10130F',
-    textSecondary: '#4A5850',
-    hairline: '#C7D3C9',
-    border: '#C7D3C9',
-    overlay: 'rgba(16, 19, 15, 0.55)',
-    brand: '#0F3D24',
-    onBrand: '#FFFFFF',
-    onBrandMuted: '#B9CFC1',
-    brandAccent: '#0F3D24',
-    statusGreen: '#1E5233',
-    statusGreenMuted: '#E8F0EA',
-    accentAmber: '#8A5A12',
-    accentAmberMuted: '#F6EEDF',
-    accentRed: '#8C2A21',
-    accentRedMuted: '#F7E9E7',
-  },
-  radius: { sq: 0, sm: 2, md: 3, lg: 4 },
-  density: 0.85,
-  capsSections: true,
-  ruleWidth: 1,
-};
-
-const SEVA: DesignTokens = {
-  id: 'seva',
-  label: 'Seva',
-  color: {
-    background: '#F1F6F2',
-    surface: '#FFFFFF',
-    surfaceMuted: '#E4EFE7',
-    surfaceLight: '#E4EFE7',
-    textPrimary: '#14181A',
-    textSecondary: '#566B5E',
-    hairline: '#D5E2D8',
-    border: '#D5E2D8',
-    overlay: 'rgba(20, 24, 26, 0.5)',
-    brand: '#17603A',
-    onBrand: '#FFFFFF',
-    onBrandMuted: '#C4DCCD',
-    brandAccent: '#17603A',
-    statusGreen: '#1F6A41',
-    statusGreenMuted: '#E7F2EB',
-    accentAmber: '#95611A',
-    accentAmberMuted: '#F8F0E2',
-    accentRed: '#9A3229',
-    accentRedMuted: '#F9ECEA',
-  },
-  radius: { sq: 6, sm: 8, md: 10, lg: 14 },
-  density: 1.15,
-  capsSections: false,
-  ruleWidth: 1,
-};
-
-const CONTROL: DesignTokens = {
-  id: 'control',
-  label: 'Control',
-  color: {
-    background: '#FFFFFF',
-    surface: '#F2F5F3',
-    surfaceMuted: '#E3E9E4',
-    surfaceLight: '#E3E9E4',
-    textPrimary: '#0B0E0C',
-    textSecondary: '#4E5A52',
-    hairline: '#CCD5CE',
-    border: '#CCD5CE',
-    overlay: 'rgba(11, 14, 12, 0.6)',
-    brand: '#111614',
-    onBrand: '#FFFFFF',
-    onBrandMuted: '#9FB0A6',
-    brandAccent: '#2E7D51',
-    statusGreen: '#22603C',
-    statusGreenMuted: '#E9F1EC',
-    accentAmber: '#8F5A14',
-    accentAmberMuted: '#F6EFE1',
-    accentRed: '#8F2C22',
-    accentRedMuted: '#F8EAE8',
-  },
-  radius: { sq: 2, sm: 4, md: 5, lg: 6 },
-  density: 0.9,
-  capsSections: true,
-  ruleWidth: 1,
-};
-
-export const VARIANTS: Record<DesignVariant, DesignTokens> = {
-  secretariat: SECRETARIAT,
-  seva: SEVA,
-  control: CONTROL,
-};
-
-export const VARIANT_ORDER: DesignVariant[] = ['secretariat', 'seva', 'control'];
-
-/** Backwards-compatible export: the default variant's palette. */
-export const lightTheme: ColorTheme = SECRETARIAT.color;
-
 type ThemeContextType = {
   theme: ColorTheme;
-  tokens: DesignTokens;
-  variant: DesignVariant;
-  setVariant: (v: DesignVariant) => void;
-  /** Spacing scaled by the variant's density, so panels breathe consistently. */
+  tokens: LayoutTokens;
+  /** Spacing scaled by the layout's density, so the page breathes consistently. */
   sp: (n: number) => number;
 };
 
-const ThemeContext = createContext<ThemeContextType>({
-  theme: SECRETARIAT.color,
-  tokens: SECRETARIAT,
-  variant: 'secretariat',
-  setVariant: () => {},
-  sp: (n) => n,
-});
-
-export const useTheme = () => useContext(ThemeContext);
-
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [variant, setVariant] = useState<DesignVariant>('secretariat');
-
-  const value = useMemo(() => {
-    const tokens = VARIANTS[variant];
-    return {
-      theme: tokens.color,
-      tokens,
-      variant,
-      setVariant,
-      sp: (n: number) => Math.round(n * tokens.density),
-    };
-  }, [variant]);
-
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+const VALUE: ThemeContextType = {
+  theme: PALETTE,
+  tokens,
+  sp: (n: number) => Math.round(n * tokens.density),
 };
+
+const ThemeContext = React.createContext<ThemeContextType>(VALUE);
+
+export const useTheme = () => React.useContext(ThemeContext);
+
+export const ThemeProvider = ({ children }: { children: React.ReactNode }) => (
+  <ThemeContext.Provider value={VALUE}>{children}</ThemeContext.Provider>
+);
