@@ -210,8 +210,16 @@ export default function MissionControlScreen({ route }: any) {
       {/* minHeight is what stops the feed above crushing these columns: the feed
           asks for its full ratio height first, and flex would otherwise settle
           the shortfall entirely out of this row. */}
-      <View style={{ flex: 1, minHeight: 132, flexDirection: 'row', paddingHorizontal: g, paddingTop: sp(18) }}>
-        <View style={{ flex: 1.1, paddingRight: g }}>{map}</View>
+      {/* The two flanking columns carry the same weight, so the band is a mirror
+          about the readings in its middle: map and camera controls sit at equal
+          widths and equal distances from the page's edges. They were 1.1 and 1,
+          which put the map 22pt wider than the controls — close enough to look
+          like a mistake rather than a decision.
+
+          paddingVertical, not paddingTop: both columns centre their contents,
+          so padding on one side alone shifted everything down by half of it. */}
+      <View style={{ flex: 1, minHeight: 132, flexDirection: 'row', paddingHorizontal: g, paddingVertical: sp(18) }}>
+        <View style={{ flex: 1, paddingRight: g, justifyContent: 'center' }}>{map}</View>
         <VRule />
         <View style={{ flex: 1.6, paddingHorizontal: g, justifyContent: 'center' }}>
           {readings(3)}
