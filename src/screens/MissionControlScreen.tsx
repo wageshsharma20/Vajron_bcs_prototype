@@ -219,13 +219,13 @@ export default function MissionControlScreen({ route }: any) {
           paddingVertical, not paddingTop: both columns centre their contents,
           so padding on one side alone shifted everything down by half of it. */}
       <View style={{ flex: 1, minHeight: 132, flexDirection: 'row', paddingHorizontal: g, paddingVertical: sp(18) }}>
-        <View style={{ flex: 1, paddingRight: g, justifyContent: 'center' }}>{map}</View>
+        <View style={{ flex: 1.3, paddingRight: g, justifyContent: 'center' }}>{map}</View>
         <VRule />
-        <View style={{ flex: 1.6, paddingHorizontal: g, justifyContent: 'center' }}>
+        <View style={{ flex: 1.55, paddingHorizontal: g, justifyContent: 'center' }}>
           {readings(3)}
         </View>
         <VRule />
-        <View style={{ flex: 1, paddingLeft: g, justifyContent: 'center' }}>{camera}</View>
+        <View style={{ flex: 1.3, paddingLeft: g, justifyContent: 'center' }}>{camera}</View>
       </View>
 
       {progressFooter()}
