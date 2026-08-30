@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Image, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { LayoutGrid, Route, Radar, Wrench } from 'lucide-react-native';
 import { useTheme, typography } from '../theme';
@@ -102,6 +102,28 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
           </TouchableOpacity>
         );
       })}
+      <View style={{ flex: 1 }} />
+      <View style={{ alignItems: 'center', paddingBottom: sp(20) }}>
+        <View style={{
+          width: tokens.navRailWidth * 0.8,
+          height: tokens.navRailWidth * 0.8,
+          borderRadius: (tokens.navRailWidth * 0.8) / 2,
+          backgroundColor: '#FFFFFF',
+          overflow: 'hidden',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          {/* Local asset, not a hotlinked search-result thumbnail: the station
+              runs on a Pi in the field with no guarantee of internet, and that
+              URL was a Google CDN link that expires. */}
+          <Image
+            source={require('../../assets/images/dda-greens-logo.png')}
+            style={{ width: '95%', height: '95%' }}
+            resizeMode="contain"
+            accessibilityLabel="DDA Greens"
+          />
+        </View>
+      </View>
     </View>
   );
 }

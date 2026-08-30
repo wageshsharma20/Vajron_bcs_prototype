@@ -48,14 +48,15 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
     <TouchableOpacity
       style={[
         styles.container,
-        { borderBottomColor: theme.hairline, borderBottomWidth: tokens.rule.hair, paddingVertical: sp(18) },
+        { borderBottomColor: theme.hairline, borderBottomWidth: tokens.rule.hair, paddingVertical: sp(26), flexDirection: 'row' },
       ]}
       onPress={onPress}
     >
       {/* The status marker hangs in the gutter as a rule rather than sitting
           inline as a dot, so the row's text keeps one unbroken left edge and
           the marker still reads down the list as a column of its own. */}
-      <View style={[styles.marker, { backgroundColor: statusColor }]} />
+      <View style={[styles.marker, { backgroundColor: statusColor, marginTop: 4 }]} />
+      <View style={{ flex: 1, paddingLeft: 16 }}>
 
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>{drone.id}</Text>
@@ -98,6 +99,7 @@ export default function DroneStatusCard({ drone, telemetry, onPress }: DroneStat
           Last: {timeAgo(drone.lastSeenAt)}
         </Text>
       </View>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -109,10 +111,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   marker: {
-    position: 'absolute',
-    // Sits outside the text column, in the page gutter.
-    left: -12,
-    top: 20,
+    
     width: 3,
     height: 14,
   },
@@ -124,7 +123,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fonts.bold,
-    fontSize: typography.sizes.base,
+    fontSize: 18,
     letterSpacing: -0.3,
   },
   badgeText: {
@@ -134,7 +133,7 @@ const styles = StyleSheet.create({
   },
   model: {
     fontFamily: typography.fonts.regular,
-    fontSize: typography.sizes.sm,
+    fontSize: 15,
     marginBottom: 10,
   },
   metricsRow: {
@@ -143,7 +142,7 @@ const styles = StyleSheet.create({
   },
   metric: {
     fontFamily: typography.fonts.semiBold,
-    fontSize: typography.sizes.xs,
+    fontSize: 14,
     letterSpacing: 0.2,
     fontVariant: typography.tabularNums,
   },

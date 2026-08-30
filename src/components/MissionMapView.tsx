@@ -33,7 +33,13 @@ export default function MissionMapView({ player, isArmed, progress }: MissionMap
           of this frame, so the video must fill it exactly rather than be cropped.
           The frame is measured to the slot rather than declared at 100% width,
           so a short slot shrinks it instead of clipping it. */}
-      <View style={[styles.frame, frameSize, { borderColor: theme.hairline }]}>
+      <View
+        style={[
+          styles.frame,
+          frameSize,
+          { borderColor: theme.hairline, backgroundColor: theme.brandDeep },
+        ]}
+      >
         <VideoView
           player={player}
           style={styles.video}
@@ -76,7 +82,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     overflow: 'hidden',
     borderWidth: 1,
-    backgroundColor: '#0E1512',
   },
   badge: {
     // Flush into the frame's corner as a plate rather than floating inset.

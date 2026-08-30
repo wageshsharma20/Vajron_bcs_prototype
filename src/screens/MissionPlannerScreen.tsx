@@ -196,6 +196,7 @@ const styles = StyleSheet.create({
   mapSlot: {
     flex: 1,
     position: 'relative',
+    padding: 36,
   },
   checklistOverlay: {
     position: 'absolute',

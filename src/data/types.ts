@@ -23,7 +23,12 @@ export interface TelemetryFrame {
   linkRssi: number;
   gpsFixType: 'none' | '2d' | '3d' | 'rtk';
   gpsSatsVisible: number;
-  flightMode: 'manual' | 'stabilize' | 'auto' | 'rtl' | 'land' | 'hold' | 'loiter';
+  /**
+   * 'idle' is the on-ground, disarmed state. It was missing from this union
+   * while both the seed data and the RTL reset assigned it, so the two call
+   * sites were type errors even though the spine has always displayed it.
+   */
+  flightMode: 'idle' | 'manual' | 'stabilize' | 'auto' | 'rtl' | 'land' | 'hold' | 'loiter';
   isArmed: boolean;
   distanceToHome: number;
   jetsonCpuTemp: number;
@@ -87,3 +92,26 @@ export interface DroneAlert {
   lat?: number;
   lng?: number;
 }
+
+/**
+ * A maintenance category and its rows, as shown by InspectionAccordion.
+ *
+ * Previously imported from '../types', a module that does not exist — so the
+ * component's `data` prop resolved to an error type and its callbacks fell back
+ * to implicit `any`. Declared here with the rest of the domain types.
+ */
+export type InspectionItemStatus = 'good' | 'attention' | 'issue' | 'critical';
+
+export type InspectionItem = {
+  id: string;
+  name: string;
+  value: string;
+  status: InspectionItemStatus;
+};
+
+export type InspectionCategory = {
+  category: string;
+  /** Key into the accordion's icon map. */
+  iconName: string;
+  items: InspectionItem[];
+};

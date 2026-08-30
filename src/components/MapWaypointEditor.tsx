@@ -59,7 +59,13 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
         {/* Locked to the source frame's ratio so the still and the markers share
             one coordinate space; measured against the slot so it fits whichever
             of the two dimensions is the tighter one. */}
-        <View style={[styles.frame, frameSize, { borderColor: theme.hairline }]}>
+        <View
+          style={[
+            styles.frame,
+            frameSize,
+            { borderColor: theme.hairline, backgroundColor: theme.brandDeep },
+          ]}
+        >
           {/* Sized explicitly rather than with absoluteFill: on web the Image
               keeps its intrinsic 832x336 box under absoluteFill and simply gets
               clipped by the frame, which slides the map under the markers. */}
@@ -95,6 +101,7 @@ const styles = StyleSheet.create({
     // so its first edge should start on the same line as the sidebar's first
     // field rather than floating in the middle of its half.
     justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   mapImage: {
     position: 'absolute',
@@ -107,7 +114,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     overflow: 'hidden',
     borderWidth: 1,
-    backgroundColor: '#0E1512',
   },
   badge: {
     position: 'absolute',

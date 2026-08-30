@@ -15,7 +15,7 @@ import {
 } from 'lucide-react-native';
 import { Text } from 'react-native-paper';
 import { useTheme, typography } from '../theme';
-import { InspectionCategory } from '../types';
+import { InspectionCategory } from '../data/types';
 
 export interface InspectionAccordionProps {
   data: InspectionCategory;
@@ -42,11 +42,13 @@ export default function InspectionAccordion({ data, index }: InspectionAccordion
   let issueCount = 0;
   
   data.items.forEach(item => {
-    if ((item.status as string) === 'critical') highestSeverity = 'critical';
+    // The `as string` casts these lines carried were only there to silence the
+    // missing type; with InspectionItemStatus declared they are unnecessary.
+    if (item.status === 'critical') highestSeverity = 'critical';
     else if (item.status === 'issue' && highestSeverity !== 'critical') highestSeverity = 'issue';
-    else if ((item.status as string) === 'attention' && highestSeverity === 'good') highestSeverity = 'attention';
-    
-    if (item.status === 'issue' || (item.status as string) === 'critical' || (item.status as string) === 'attention') {
+    else if (item.status === 'attention' && highestSeverity === 'good') highestSeverity = 'attention';
+
+    if (item.status === 'issue' || item.status === 'critical' || item.status === 'attention') {
       issueCount++;
     }
   });

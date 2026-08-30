@@ -26,6 +26,12 @@ export const typography = {
     medium: 'NotoSans_500Medium',
     semiBold: 'NotoSans_600SemiBold',
     bold: 'NotoSans_700Bold',
+    /**
+     * Used for the product name in the spine and nothing else. A light display
+     * face suits a masthead but not a readout, so it deliberately does not
+     * reach the working area, where figures have to hold up at a glance.
+     */
+    display: 'TypeLightSans',
   },
   tabularNums: ['tabular-nums'] as ('tabular-nums')[],
   sizes: {
@@ -75,6 +81,13 @@ export type ColorTheme = {
   onBrandMuted: string;
   /** Accent used for the active state on light chrome. */
   brandAccent: string;
+  /**
+   * The deepest green in the family, for media mattes: the letterbox behind a
+   * video frame and the ground under a map tile. Dark enough to sit behind
+   * imagery without competing with it, but still a green rather than a black,
+   * so a dead feed reads as part of the station and not as a hole in it.
+   */
+  brandDeep: string;
 
   statusGreen: string;
   statusGreenMuted: string;
@@ -84,23 +97,44 @@ export type ColorTheme = {
   accentRedMuted: string;
 };
 
-/** Near-black chrome over a white working area. */
+/**
+ * Deep-green chrome over a white working area.
+ *
+ * The greens are not new to the estate: they are the survey app's own ramp,
+ * lifted stop for stop so the two applications read as one system rather than
+ * two products that happen to share a client. #1E5233 is that app's deepest
+ * forest and #A3C9AE its lightest leaf; the pale washes are its panel tints.
+ *
+ * Chrome was previously near-black. Black is the absence of a decision — it
+ * reads as unfinished tooling rather than as an instrument, and it shares no
+ * ancestry with the app the operator uses for the same parks. The spine and the
+ * rail now carry the forest, and the working area keeps its white ground so the
+ * readouts stay the loudest thing on the screen.
+ *
+ * Warning and alarm stay amber and red. A green interface must not colour its
+ * own exceptions green, or the one moment the palette has to raise its voice is
+ * the moment it blends in.
+ */
 export const PALETTE: ColorTheme = {
   background: '#FFFFFF',
-  surface: '#F7F9F8',
-  surfaceMuted: '#EDF1EE',
-  surfaceLight: '#EDF1EE',
-  textPrimary: '#0B0E0C',
-  textSecondary: '#5A665E',
-  hairline: '#DCE3DE',
-  border: '#DCE3DE',
-  overlay: 'rgba(11, 14, 12, 0.6)',
-  brand: '#111614',
+  surface: '#ECF5EF',
+  surfaceMuted: '#E2EFE5',
+  surfaceLight: '#E2EFE5',
+  // Near-black to the eye, but mixed from the forest rather than from neutral
+  // grey, so text sits in the same family as the chrome instead of cutting
+  // against it. Contrast on white is far past AA either way.
+  textPrimary: '#0D2117',
+  textSecondary: '#4E6357',
+  hairline: '#CBDFD2',
+  border: '#CBDFD2',
+  overlay: 'rgba(13, 33, 23, 0.6)',
+  brand: '#1E5233',
   onBrand: '#FFFFFF',
-  onBrandMuted: '#9FB0A6',
-  brandAccent: '#2E7D51',
-  statusGreen: '#22603C',
-  statusGreenMuted: '#E9F1EC',
+  onBrandMuted: '#A3C9AE',
+  brandAccent: '#5B9C6E',
+  brandDeep: '#0F2A1B',
+  statusGreen: '#1E5233',
+  statusGreenMuted: '#E2EFE5',
   accentAmber: '#8F5A14',
   accentAmberMuted: '#F6EFE1',
   accentRed: '#8F2C22',
@@ -158,7 +192,8 @@ export const tokens: LayoutTokens = {
  * middle than a government interface should show.
  */
 export const STATUS_RAMPS = {
-  green: ['#A8C4AC', '#5E8F6B', '#1E5233'],
+  // The survey app's score ramp, stop for stop.
+  green: ['#A3C9AE', '#5B9C6E', '#1E5233'],
   // Warmed off the previous #B8863F/#77490F, which sat far enough toward brown
   // that a mid reading did not register as orange at all.
   amber: ['#E4C3A0', '#C67B33', '#8A4512'],

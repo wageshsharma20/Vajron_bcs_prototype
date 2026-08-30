@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useTheme } from '../theme';
+import { useTheme, tokens } from '../theme';
 import { typography } from '../theme';
 import { Page, SectionHeading, useHeaderColors } from '../components/Chrome';
 import DroneStatusCard from '../components/DroneStatusCard';
@@ -136,6 +136,8 @@ export default function FleetDashboardScreen({ navigation }: any) {
             <View
               key={cell.label}
               style={{
+                flex: 1,
+                justifyContent: 'center',
                 paddingVertical: sp(22),
                 paddingHorizontal: tokens.gutter,
                 alignItems: 'center',
@@ -146,16 +148,16 @@ export default function FleetDashboardScreen({ navigation }: any) {
               <CircularScore
                 score={cell.score}
                 label={cell.label}
-                size={tokens.gaugeSize}
-                strokeWidth={Math.round(tokens.gaugeSize * 0.09)}
+                size={120}
+                strokeWidth={10}
               />
             </View>
           ))}
         </View>
 
         <View style={styles.rosterColumn}>
-          <SectionHeading first>Fleet</SectionHeading>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.gutter, paddingBottom: sp(32) }}>
+          <Text style={{ fontFamily: typography.fonts.bold, fontSize: 18, letterSpacing: 1.6, textTransform: 'uppercase', color: theme.textSecondary, marginBottom: sp(16) }}>Fleet</Text>
+          <ScrollView contentContainerStyle={{ paddingRight: tokens.gutter, paddingBottom: sp(32) }}>
             {drones.map(drone => (
               <DroneStatusCard
                 key={drone.id}
@@ -183,9 +185,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   summaryColumn: {
-    width: '30%',
+    width: '25%',
+    justifyContent: 'space-between',
   },
   rosterColumn: {
     flex: 1,
+    paddingTop: tokens.gutter,
+    paddingLeft: tokens.gutter,
   },
 });

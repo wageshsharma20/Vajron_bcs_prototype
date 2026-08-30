@@ -1,7 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, typography } from '../theme';
+
+/** Padding inside the white identity plate, shared by the style and the
+ * wordmark measurement so the two cannot disagree. */
+const IDENTITY_PADDING = 12;
 
 /**
  * Shared page furniture: the page frame, the spine, section headings and rules.
@@ -20,7 +24,7 @@ export function useGutter() {
 /**
  * Which text colours are legible on the spine.
  *
- * The spine is always the near-black brand surface, so a screen passing its own
+ * The spine is always the deep-green brand surface, so a screen passing its own
  * subtitle asks here rather than assuming the page ground.
  */
 export function useHeaderColors() {
@@ -103,6 +107,18 @@ export function PageHeader({
   const { theme, tokens, sp } = useTheme();
   const insets = useSafeAreaInsets();
 
+  /**
+   * The wordmark's height, solved rather than declared.
+   *
+   * `aspectRatio` does not drive an <img> in react-native-web the way it drives
+   * a View: the element keeps its intrinsic height, so the 774x188 source came
+   * out 188pt tall inside a 138pt-wide box and left a tall column of white
+   * under it. Deriving the height from the width it will actually occupy keeps
+   * the ratio true on both platforms.
+   */
+  const wordmarkWidth = tokens.spineWidth - sp(22) * 2 - IDENTITY_PADDING * 2;
+  const wordmarkHeight = Math.round(wordmarkWidth * (188 / 774));
+
   return (
     <View
       style={{
@@ -115,6 +131,29 @@ export function PageHeader({
       }}
     >
       <View>
+        {/* The masthead sits on white rather than directly on the spine.
+            The emblem is a transparent PNG and the wordmark is an opaque white
+            plate, so on the dark spine the emblem showed black through its
+            counters while the wordmark read as a detached white strip. One
+            white ground behind both makes them a single identity block and
+            gives the emblem the background it was drawn for. */}
+        <View style={styles.identity}>
+          <Image
+            source={require('../../assets/images/dda-emblem.png')}
+            style={styles.identityEmblem}
+            resizeMode="contain"
+            accessibilityLabel="Delhi Development Authority"
+          />
+          <Image
+            source={require('../../assets/dda_text.png')}
+            style={{ width: wordmarkWidth, height: wordmarkHeight }}
+            resizeMode="contain"
+          />
+        </View>
+
+        <Text style={[styles.productName, { color: theme.onBrand }]}>
+          Ground Control Station
+        </Text>
         <View
           style={{
             width: 28,
@@ -238,6 +277,25 @@ export function Panel({
 }
 
 const styles = StyleSheet.create({
+  identity: {
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    paddingVertical: IDENTITY_PADDING,
+    paddingHorizontal: IDENTITY_PADDING,
+    marginBottom: 18,
+  },
+  identityEmblem: {
+    width: 54,
+    height: 54,
+    marginBottom: 8,
+  },
+  productName: {
+    fontFamily: typography.fonts.display,
+    fontSize: 21,
+    lineHeight: 26,
+    letterSpacing: 0.2,
+    marginBottom: 26,
+  },
   page: {
     flex: 1,
     width: '100%',

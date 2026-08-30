@@ -11,6 +11,8 @@ import {
   NotoSans_500Medium,
   NotoSans_600SemiBold,
   NotoSans_700Bold,
+
+
 } from '@expo-google-fonts/noto-sans';
 
 import { lightTheme, ThemeProvider, useTheme } from './src/theme';
@@ -56,7 +58,10 @@ const navTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#F0F1F3', // Light gray background for web void
+    // The void around the app on a wide browser window. Tinted with the
+    // station's own pale green rather than a neutral grey, so an oversized
+    // viewport frames the interface instead of interrupting it.
+    background: lightTheme.surfaceMuted,
   },
 };
 
@@ -71,6 +76,9 @@ export default function App() {
           NotoSans_500Medium,
           NotoSans_600SemiBold,
           NotoSans_700Bold,
+          // Public domain (CC0) — see assets/fonts/TypeLightSans-LICENSE-CC0.txt
+          TypeLightSans: require('./assets/fonts/TypeLightSans.ttf'),
+
         });
       } finally {
         // Render either way. Holding on the spinner when a face fails to resolve

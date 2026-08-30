@@ -25,7 +25,7 @@ export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFee
 
   return (
     <View ref={frameSlot} style={styles.container} onLayout={onLayout}>
-      <View style={[styles.frame, frameSize, { backgroundColor: '#1A1A1A' }]}>
+      <View style={[styles.frame, frameSize, { backgroundColor: theme.brandDeep }]}>
       <VideoView
         player={player}
         style={styles.video}
