@@ -8,9 +8,21 @@ interface PreFlightChecklistProps {
   checks: PreFlightCheck[];
   onLaunch: () => void;
   isLaunchDisabled?: boolean;
+  /**
+   * Which half to render. Some arrangements put the checks and the launch
+   * control in different parts of the page; splitting here rather than in the
+   * screen keeps the disabled-when-blocked rule in one place, so a layout can
+   * never show a live launch button beside a failing blocker.
+   */
+  part?: 'all' | 'checks' | 'launch';
 }
 
-export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled: externalDisabled }: PreFlightChecklistProps) {
+export default function PreFlightChecklist({
+  checks,
+  onLaunch,
+  isLaunchDisabled: externalDisabled,
+  part = 'all',
+}: PreFlightChecklistProps) {
   const { theme, tokens, sp } = useTheme();
 
   const internalDisabled = checks.some(c => c.blocker && (c.status === 'fail' || c.status === 'checking'));
@@ -41,7 +53,8 @@ export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled:
   return (
     <View style={styles.container}>
       
-      <View style={[styles.list, { marginBottom: sp(20) }]}>
+      {part !== 'launch' && (
+      <View style={[styles.list, part === 'checks' ? null : { marginBottom: sp(20) }]}>
         {checks.map(check => (
           <View
             key={check.id}
@@ -60,7 +73,9 @@ export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled:
           </View>
         ))}
       </View>
+      )}
 
+      {part !== 'checks' && (
       <TouchableOpacity 
         style={[
           styles.launchButton, 
@@ -78,6 +93,7 @@ export default function PreFlightChecklist({ checks, onLaunch, isLaunchDisabled:
           REVIEW & LAUNCH
         </Text>
       </TouchableOpacity>
+      )}
     </View>
   );
 }

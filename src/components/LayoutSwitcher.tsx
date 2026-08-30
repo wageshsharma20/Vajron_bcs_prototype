@@ -1,23 +1,26 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTheme, typography } from '../theme';
-import { LIVE_OPS_LAYOUTS, type LiveOpsLayout } from '../screens/liveOpsLayouts';
+
+export type LayoutOption<T extends string> = { id: T; label: string; note: string };
 
 /**
- * Switches between the Live Ops arrangements.
+ * Switches between candidate arrangements of a screen.
  *
- * Scaffolding for choosing one, not part of the product. It sits at the foot of
- * the spine rather than anywhere in the working area, so the arrangement being
- * judged is never competing with the control used to pick it, and it carries no
- * mission data. Remove this component, its mount and `liveOpsLayouts.ts` once an
- * arrangement is settled on.
+ * Scaffolding for choosing one, not part of the product. It mounts at the foot
+ * of the spine rather than anywhere in the working area, so the arrangement
+ * being judged is never competing with the control used to pick it, and it
+ * carries no mission data. Remove the mount, the options list and the screen's
+ * `layouts` map once an arrangement is settled on.
  */
-export default function LiveOpsLayoutSwitcher({
+export default function LayoutSwitcher<T extends string>({
+  options,
   value,
   onChange,
 }: {
-  value: LiveOpsLayout;
-  onChange: (v: LiveOpsLayout) => void;
+  options: readonly LayoutOption<T>[];
+  value: T;
+  onChange: (v: T) => void;
 }) {
   const { theme, sp } = useTheme();
 
@@ -26,7 +29,7 @@ export default function LiveOpsLayoutSwitcher({
       <Text style={[styles.caption, { color: theme.onBrandMuted, marginBottom: sp(8) }]}>
         LAYOUT
       </Text>
-      {LIVE_OPS_LAYOUTS.map((opt) => {
+      {options.map((opt) => {
         const active = opt.id === value;
         return (
           <Pressable
@@ -37,10 +40,7 @@ export default function LiveOpsLayoutSwitcher({
             style={styles.row}
           >
             <View
-              style={[
-                styles.marker,
-                { backgroundColor: active ? theme.onBrand : 'transparent' },
-              ]}
+              style={[styles.marker, { backgroundColor: active ? theme.onBrand : 'transparent' }]}
             />
             <Text
               style={[

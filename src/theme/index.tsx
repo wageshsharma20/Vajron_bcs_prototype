@@ -137,11 +137,6 @@ export type LayoutTokens = {
   rule: { hair: number; thin: number; medium: number; thick: number };
   /** Diameter of the fleet summary gauges — how loudly the fleet score speaks. */
   gaugeSize: number;
-  /**
-   * How the camera feed and the map divide the width of the picture row. The
-   * feed is the operator's eye on the aircraft, so it takes the larger share.
-   */
-  mediaSplit: { feed: number; map: number };
 };
 
 export const tokens: LayoutTokens = {
@@ -152,7 +147,6 @@ export const tokens: LayoutTokens = {
   radius: { sq: 0, sm: 0, md: 0, lg: 0 },
   rule: { hair: 1, thin: 1, medium: 2, thick: 4 },
   gaugeSize: 92,
-  mediaSplit: { feed: 1.8, map: 1 },
 };
 
 /**
