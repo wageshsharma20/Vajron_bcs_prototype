@@ -129,7 +129,14 @@ export default function FleetDashboardScreen({ navigation }: any) {
         <View
           style={[
             styles.summaryColumn,
-            { borderRightWidth: tokens.rule.hair, borderRightColor: theme.hairline },
+            {
+              borderRightWidth: tokens.rule.hair,
+              borderRightColor: theme.hairline,
+              // The pale green marks this column as a summary rather than a
+              // record: three derived averages, read at a glance, next to the
+              // white field where the actual roster is read row by row.
+              backgroundColor: theme.surface,
+            },
           ]}
         >
           {summary.map((cell, i) => (

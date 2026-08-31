@@ -137,7 +137,13 @@ export const PALETTE: ColorTheme = {
   border: '#CBDFD2',
   overlay: 'rgba(15, 42, 27, 0.62)',
   overlayHeavy: 'rgba(15, 42, 27, 0.74)',
-  brand: '#1E5233',
+  // Deep forest, not mid-green. This colour stands where the near-black chrome
+  // used to, so it has to carry the same weight on the page: #1E5233 is the
+  // survey app's darkest *ramp* stop, tuned to be legible as a gauge fill on
+  // white, and at spine scale it read as a mid-green panel rather than as the
+  // dark ground the layout was designed around. Same hue, taken down to the
+  // depth the composition needs.
+  brand: '#143521',
   onBrand: '#FFFFFF',
   onBrandMuted: '#A3C9AE',
   brandAccent: '#5B9C6E',

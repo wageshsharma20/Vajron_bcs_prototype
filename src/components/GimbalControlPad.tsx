@@ -45,33 +45,33 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
           already divide this column from the readings. */}
       <View style={styles.singleRow}>
         <TouchableOpacity
-          style={[styles.actionBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair }]}
+          style={[styles.actionBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair, backgroundColor: theme.surface }]}
           onPress={onPhoto}
           accessibilityRole="button"
           accessibilityLabel="Capture photo"
         >
-          <Camera size={17} color={theme.textPrimary} strokeWidth={1.3} />
+          <Camera size={17} color={theme.brand} strokeWidth={1.3} />
         </TouchableOpacity>
 
         <View style={styles.zoomRow}>
           <TouchableOpacity
-            style={[styles.zoomBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair }]}
+            style={[styles.zoomBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair, backgroundColor: theme.surface }]}
             onPress={() => adjustZoom(-1)}
             accessibilityRole="button"
             accessibilityLabel="Zoom out"
           >
             {/* Drawn glyphs rather than typed "-" and "+": the hyphen sat above
                 the optical centre and never matched the plus in weight. */}
-            <Minus size={15} color={theme.textPrimary} strokeWidth={1.4} />
+            <Minus size={15} color={theme.brand} strokeWidth={1.4} />
           </TouchableOpacity>
-          <Text style={[styles.zoomText, { color: theme.textPrimary }]}>{zoom}x</Text>
+          <Text style={[styles.zoomText, { color: theme.brand }]}>{zoom}x</Text>
           <TouchableOpacity
-            style={[styles.zoomBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair }]}
+            style={[styles.zoomBtn, { borderColor: theme.hairline, borderWidth: tokens.rule.hair, backgroundColor: theme.surface }]}
             onPress={() => adjustZoom(1)}
             accessibilityRole="button"
             accessibilityLabel="Zoom in"
           >
-            <Plus size={15} color={theme.textPrimary} strokeWidth={1.4} />
+            <Plus size={15} color={theme.brand} strokeWidth={1.4} />
           </TouchableOpacity>
         </View>
 
@@ -81,7 +81,7 @@ export default function GimbalControlPad({ onPanTilt, onZoom, onPhoto, onRecordT
             {
               borderColor: isRecording ? theme.accentRed : theme.hairline,
               borderWidth: tokens.rule.hair,
-              backgroundColor: isRecording ? theme.accentRed : 'transparent',
+              backgroundColor: isRecording ? theme.accentRed : theme.surface,
             },
           ]}
           onPress={handleRecord}

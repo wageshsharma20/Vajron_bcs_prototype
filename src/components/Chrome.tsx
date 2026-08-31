@@ -64,7 +64,7 @@ export function Rule({
       style={[
         {
           height: tokens.rule[weight],
-          backgroundColor: color ?? (weight === 'hair' ? theme.hairline : theme.textPrimary),
+          backgroundColor: color ?? (weight === 'hair' ? theme.hairline : theme.brand),
           marginHorizontal: inset ? tokens.gutter : 0,
         },
         style,

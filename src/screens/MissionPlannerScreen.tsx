@@ -67,7 +67,7 @@ export default function MissionPlannerScreen({ navigation }: any) {
           styles.paramInput,
           {
             color: theme.textPrimary,
-            borderBottomColor: theme.textPrimary,
+            borderBottomColor: theme.brand,
             borderBottomWidth: tokens.rule.medium,
           },
         ]}
@@ -101,15 +101,16 @@ export default function MissionPlannerScreen({ navigation }: any) {
         style={[
           styles.secondaryBtn,
           {
-            borderColor: theme.textPrimary,
+            borderColor: theme.brand,
             borderWidth: tokens.rule.hair,
+            backgroundColor: theme.surface,
             paddingVertical: sp(11),
             paddingHorizontal: sp(20),
           },
         ]}
         onPress={handleSurveyGrid}
       >
-        <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>SURVEY GRID</Text>
+        <Text style={[styles.secondaryBtnText, { color: theme.brand }]}>SURVEY GRID</Text>
       </TouchableOpacity>
     </View>
   );
@@ -153,7 +154,7 @@ export default function MissionPlannerScreen({ navigation }: any) {
         )}
       </View>
 
-      <Rule weight="thick" color={theme.textPrimary} />
+      <Rule weight="thick" />
 
       <View
         style={{

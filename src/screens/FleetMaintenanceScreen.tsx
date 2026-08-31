@@ -51,7 +51,9 @@ export default function FleetMaintenanceScreen() {
             style={[
               styles.selectorBtn,
               {
-                backgroundColor: selected ? theme.brand : theme.background,
+                // Unselected rows sit on the pale field, so the column
+                // reads as a chooser beside the white record it drives.
+                backgroundColor: selected ? theme.brand : theme.surface,
                 paddingVertical: sp(17),
                 paddingHorizontal: tokens.gutter,
                 borderBottomWidth: tokens.rule.hair,
@@ -126,7 +128,7 @@ export default function FleetMaintenanceScreen() {
         paddingHorizontal: tokens.gutter,
         paddingTop: sp(18),
         paddingBottom: insets.bottom + sp(18),
-        borderTopColor: theme.textPrimary,
+        borderTopColor: theme.brand,
         borderTopWidth: tokens.rule.thick,
         backgroundColor: theme.background,
       }}

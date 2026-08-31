@@ -159,15 +159,15 @@ export default function MissionControlScreen({ route }: any) {
       >
         <View style={styles.actionsRow}>
           {!telemetry?.isArmed ? (
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.statusGreen, paddingHorizontal: sp(24), paddingVertical: sp(12) }]} onPress={() => setTakeOffDialogVisible(true)}>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.brand, paddingHorizontal: sp(24), paddingVertical: sp(12) }]} onPress={() => setTakeOffDialogVisible(true)}>
               <UploadCloud size={18} color="#FFFFFF" strokeWidth={1.4} />
               <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 8 }]}>TAKE OFF</Text>
             </TouchableOpacity>
           ) : (
             <>
-              <TouchableOpacity style={[styles.actionBtn, { paddingHorizontal: sp(24), paddingVertical: sp(12), borderWidth: tokens.rule.hair, borderColor: theme.hairline }]} onPress={handlePauseToggle}>
-                {isPaused ? <Play size={18} color={theme.textPrimary} strokeWidth={1.4} /> : <Pause size={18} color={theme.textPrimary} strokeWidth={1.4} />}
-                <Text style={[styles.actionBtnText, { color: theme.textPrimary, marginLeft: 8 }]}>{isPaused ? 'RESUME' : 'PAUSE'}</Text>
+              <TouchableOpacity style={[styles.actionBtn, { paddingHorizontal: sp(24), paddingVertical: sp(12), borderWidth: tokens.rule.hair, borderColor: theme.hairline, backgroundColor: theme.surface }]} onPress={handlePauseToggle}>
+                {isPaused ? <Play size={18} color={theme.brand} strokeWidth={1.4} /> : <Pause size={18} color={theme.brand} strokeWidth={1.4} />}
+                <Text style={[styles.actionBtnText, { color: theme.brand, marginLeft: 8 }]}>{isPaused ? 'RESUME' : 'PAUSE'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.accentRed, paddingHorizontal: sp(24), paddingVertical: sp(12) }]} onPress={() => setRtlDialogVisible(true)}>
                 <DownloadCloud size={18} color="#FFFFFF" strokeWidth={1.4} />
@@ -205,7 +205,7 @@ export default function MissionControlScreen({ route }: any) {
       {/* A thick rule divides what the aircraft is seeing from what it is
           reporting. It is the strongest line on the screen because that is the
           biggest change of subject on it. */}
-      <Rule weight="thick" color={theme.textPrimary} />
+      <Rule weight="thick" />
 
       {/* minHeight is what stops the feed above crushing these columns: the feed
           asks for its full ratio height first, and flex would otherwise settle
