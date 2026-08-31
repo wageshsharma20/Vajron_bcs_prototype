@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# THE PANIC KEY.  Ctrl + Alt + Shift + Q closes the GCS and gives the Pi back.
+#
+# Run by triggerhappy (thd), which reads the keyboard straight from
+# /dev/input/event* in the kernel. That is the whole point: Chromium in kiosk
+# mode grabs the keyboard through the compositor, so anything bound at the
+# compositor or X level — an openbox keybinding, xbindkeys, a browser shortcut —
+# gets swallowed by the app and never fires. Reading below the compositor is the
+# only place a key combination cannot be intercepted by the thing you are trying
+# to escape from.
+#
+# Deliberately not asking for the safe code. A code prompt needs somewhere to
+# type it, and the whole reason you are pressing this key is that the screen is
+# covered by a fullscreen app. The key gets you OUT; the Pi's own login password
+# is what stops a stranger going any further.
+set -uo pipefail
+
+MARK=/run/vajron-gcs.panic
+STAMP="$(date '+%Y-%m-%d %H:%M:%S')"
+
+# Written first, before anything that could fail. vajron-test-hotkey watches for
+# this file, so the self-test proves the key really reached this script rather
+# than proving the kiosk happened to stop for some other reason.
+printf '%s\n' "$STAMP" > "$MARK" 2>/dev/null || true
+chmod 666 "$MARK" 2>/dev/null || true
+
+logger -t vajron-gcs "panic key pressed at ${STAMP} - stopping kiosk"
+
+systemctl stop vajron-gcs-kiosk.service 2>/dev/null || true
+
+# Stopping the kiosk frees tty1 but does not bring the login prompt back on its
+# own: the kiosk unit declares Conflicts=getty@tty1, and systemd does not restart
+# a conflicted unit when the winner goes away. Without this line the screen goes
+# black and looks broken, which is exactly the "the escape did not work" feeling
+# this key exists to prevent.
+systemctl start getty@tty1.service 2>/dev/null || true
+
+exit 0

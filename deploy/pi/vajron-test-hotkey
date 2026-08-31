@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# Proves the panic key actually fires, BEFORE you rely on it.
+#
+# This exists because "the escape hatch did not work" is only ever discovered at
+# the worst possible moment. The install runs this automatically; you can also
+# run it any time:  vajron-test-hotkey
+set -uo pipefail
+
+MARK=/run/vajron-gcs.panic
+WAIT=${1:-25}
+fail() { echo; echo "  RESULT: FAILED - $*" >&2; return 1; }
+
+echo "==> Checking the panic key"
+
+# 1. Is the daemon that reads the keyboard actually installed and running?
+if ! command -v thd > /dev/null; then
+  fail "triggerhappy (thd) is not installed. Run: sudo apt install -y triggerhappy"; exit 1
+fi
+if ! systemctl is-active --quiet triggerhappy.service; then
+  fail "triggerhappy.service is not running. Run: sudo systemctl start triggerhappy"; exit 1
+fi
+echo "    triggerhappy is running"
+
+# 2. Is our trigger file where the daemon looks for it?
+if [[ ! -f /etc/triggerhappy/triggers.d/vajron-gcs.conf ]]; then
+  fail "the trigger file is missing from /etc/triggerhappy/triggers.d/"; exit 1
+fi
+echo "    trigger file installed"
+
+# 3. Is the script it calls present and executable?
+if [[ ! -x /usr/local/bin/vajron-panic ]]; then
+  fail "/usr/local/bin/vajron-panic is missing or not executable"; exit 1
+fi
+echo "    panic script present"
+
+# 4. Can the daemon actually run it? thd runs the command as the user it was
+#    started with; as 'nobody' it cannot call systemctl and the key silently
+#    does nothing -- which looks exactly like a dead key.
+THD_CMD="$(systemctl show -p ExecStart --value triggerhappy.service 2>/dev/null || true)"
+if echo "$THD_CMD" | grep -q -- '--user nobody'; then
+  fail "triggerhappy runs as 'nobody' and cannot stop the kiosk. Re-run install-on-pi.sh."; exit 1
+fi
+echo "    daemon can stop the kiosk"
+
+# 5. The real test: a human presses the keys and we watch for the marker.
+rm -f "$MARK" 2>/dev/null || true
+echo
+echo "    ---------------------------------------------------------------"
+echo "    NOW PRESS:   Ctrl + Alt + Shift + Q"
+echo "    (hold all four together, on the keyboard plugged into the Pi)"
+echo "    ---------------------------------------------------------------"
+echo
+for i in $(seq 1 "$WAIT"); do
+  if [[ -f "$MARK" ]]; then
+    echo
+    echo "  RESULT: PASSED - the panic key works."
+    echo "  It fired at $(cat "$MARK" 2>/dev/null)."
+    rm -f "$MARK" 2>/dev/null || true
+    exit 0
+  fi
+  printf '\r    waiting... %ds ' "$(( WAIT - i + 1 ))"
+  sleep 1
+done
+
+echo
+fail "no key press detected in ${WAIT}s.
+       - Is the keyboard plugged into the Pi itself (not your laptop)?
+       - Try the left-hand Ctrl, Alt and Shift keys.
+       - Check the log:  sudo journalctl -u triggerhappy -n 30"
+exit 1

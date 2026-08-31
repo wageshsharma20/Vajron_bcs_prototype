@@ -28,16 +28,25 @@ cp "${HERE}/install-on-pi.sh" \
    "${HERE}/vajron-gcs-kiosk.service" \
    "${HERE}/vajron-unlock" \
    "${HERE}/vajron-lock" \
+   "${HERE}/vajron-panic" \
+   "${HERE}/vajron-test-hotkey" \
+   "${HERE}/vajron-hotkey.conf" \
    "${HERE}/chromium-policy.json" \
    "${HERE}/README.md" \
    "${STAGE}/vajron-gcs-pi/"
 chmod +x "${STAGE}/vajron-gcs-pi/install-on-pi.sh" \
          "${STAGE}/vajron-gcs-pi/vajron-unlock" \
-         "${STAGE}/vajron-gcs-pi/vajron-lock"
+         "${STAGE}/vajron-gcs-pi/vajron-lock" \
+         "${STAGE}/vajron-gcs-pi/vajron-panic" \
+         "${STAGE}/vajron-gcs-pi/vajron-test-hotkey"
 
 # The policy file is what restricts the browser to the GCS; shipping without it
 # would silently produce an unlocked kiosk.
-for required in install-on-pi.sh vajron-gcs.service vajron-gcs-kiosk.service vajron-unlock vajron-lock chromium-policy.json; do
+# vajron-panic and its trigger file are the way out of a fullscreen kiosk;
+# shipping without them produces a lockdown with no key.
+for required in install-on-pi.sh vajron-gcs.service vajron-gcs-kiosk.service \
+                vajron-unlock vajron-lock vajron-panic vajron-test-hotkey \
+                vajron-hotkey.conf chromium-policy.json; do
   [[ -f "${STAGE}/vajron-gcs-pi/${required}" ]] || { echo "ERROR: ${required} missing from payload" >&2; exit 1; }
 done
 

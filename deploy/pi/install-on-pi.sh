@@ -211,6 +211,60 @@ sudo chmod +x /usr/local/bin/vajron-gcs-kiosk
 sudo install -m 755 "${SCRIPT_DIR}/vajron-unlock" /usr/local/bin/vajron-unlock
 sudo install -m 755 "${SCRIPT_DIR}/vajron-lock"   /usr/local/bin/vajron-lock
 
+# ----------------------------------------------------------------- panic key
+# Ctrl+Alt+Shift+Q, read straight from the kernel's input devices.
+#
+# This is the piece that was missing. Everything else here can only be escaped
+# from a console, and reaching a console means the fullscreen app has already
+# let go of the screen. A key bound inside the compositor is no good either:
+# Chromium in kiosk mode grabs the keyboard, so compositor-level and X-level
+# bindings get swallowed by the very app you are trying to close. triggerhappy
+# reads /dev/input/event* below all of that, where nothing can intercept it.
+echo "==> Installing the panic key (Ctrl+Alt+Shift+Q)"
+HOTKEY_OK=1
+if ! command -v thd > /dev/null; then
+  echo "    installing triggerhappy…"
+  # The cage block above only refreshes the package lists when cage is missing,
+  # so on a Pi that already had cage the lists may be stale and the install
+  # would fail for no visible reason.
+  sudo apt-get update -qq || true
+  sudo apt-get install -y -qq triggerhappy || true
+fi
+
+if ! command -v thd > /dev/null; then
+  echo "    WARNING: triggerhappy could not be installed (no internet?)." >&2
+  echo "    The panic key will NOT work. Console, SSH and the SD-card hatch still do." >&2
+  HOTKEY_OK=0
+else
+  sudo install -m 755 "${SCRIPT_DIR}/vajron-panic"        /usr/local/bin/vajron-panic
+  sudo install -m 755 "${SCRIPT_DIR}/vajron-test-hotkey"  /usr/local/bin/vajron-test-hotkey
+  sudo mkdir -p /etc/triggerhappy/triggers.d
+  sudo install -m 644 "${SCRIPT_DIR}/vajron-hotkey.conf" \
+       /etc/triggerhappy/triggers.d/vajron-gcs.conf
+
+  # The daemon ships running as 'nobody', which cannot call systemctl. The key
+  # would be seen, the script would run, and nothing would happen — the worst
+  # kind of failure, because it looks like the key is dead. Run it as root.
+  THD_BIN="$(command -v thd)"
+  sudo mkdir -p /etc/systemd/system/triggerhappy.service.d
+  sudo tee /etc/systemd/system/triggerhappy.service.d/vajron.conf > /dev/null <<THD
+[Service]
+ExecStart=
+ExecStart=${THD_BIN} --triggers /etc/triggerhappy/triggers.d/ --socket /run/thd.socket --user root --deviceglob /dev/input/event*
+THD
+
+  sudo systemctl daemon-reload
+  sudo systemctl enable triggerhappy.service > /dev/null 2>&1 || true
+  sudo systemctl restart triggerhappy.service || true
+  sleep 1
+  if systemctl is-active --quiet triggerhappy.service; then
+    echo "    panic key armed"
+  else
+    echo "    WARNING: triggerhappy did not start. Check: journalctl -u triggerhappy" >&2
+    HOTKEY_OK=0
+  fi
+fi
+
 if (( HARD_LOCK )); then
   echo "==> Booting straight into the kiosk (no desktop)"
   # Console boot: nothing starts a desktop session, so nothing is behind the app.
@@ -266,6 +320,34 @@ sudo raspi-config nonint do_blanking 1 2>/dev/null || true
 # Ctrl+Alt+Del rebooting the GCS mid-survey is not wanted.
 sudo systemctl mask ctrl-alt-del.target 2>/dev/null || true
 
+# ----------------------------------------------------------------- self-test
+# Proving the way out works is worth more than any amount of documentation
+# claiming it does. Done here, before the first reboot, while the screen is
+# still a normal console and a failure costs nothing.
+HOTKEY_VERIFIED=0
+if (( HOTKEY_OK )); then
+  echo
+  echo "======================================================================"
+  echo "One last step: let us prove the panic key works BEFORE you rely on it."
+  echo "======================================================================"
+  if sudo /usr/local/bin/vajron-test-hotkey 30; then
+    HOTKEY_VERIFIED=1
+  else
+    echo
+    echo "    The panic key did not fire. Not fatal — the console, SSH and the" >&2
+    echo "    SD-card hatch below all still work. Re-test later with:" >&2
+    echo "        sudo vajron-test-hotkey" >&2
+  fi
+fi
+
+if (( HOTKEY_VERIFIED )); then
+  PANIC_NOTE="Ctrl+Alt+Shift+Q  — TESTED AND WORKING on this Pi"
+elif (( HOTKEY_OK )); then
+  PANIC_NOTE="Ctrl+Alt+Shift+Q  — installed but NOT yet proven (run: sudo vajron-test-hotkey)"
+else
+  PANIC_NOTE="NOT INSTALLED (triggerhappy missing) — use the console, SSH or the SD card"
+fi
+
 cat <<DONE
 
 ======================================================================
@@ -275,13 +357,18 @@ Done. Reboot and the Pi comes up straight into the GCS.
 
 THREE WAYS BACK IN — in order of convenience:
 
- 1. Console:  Ctrl+Alt+F2, log in, then:  vajron-unlock
+ 1. PANIC KEY — the fastest way, works while the GCS is fullscreen:
+    ${PANIC_NOTE}
+    Press it and the GCS closes and hands you a login prompt.
+    Put it back with:  vajron-lock
+
+ 2. Console:  Ctrl+Alt+F2, log in, then:  vajron-unlock
     ${CONSOLE_NOTE}
 
- 2. SSH:      ssh ${RUN_USER}@<pi-ip>   then:  vajron-unlock
+ 3. SSH:      ssh ${RUN_USER}@<pi-ip>   then:  vajron-unlock
     Find the IP from your router, or run 'hostname -I' before locking.
 
- 3. SD CARD — works even if 1 and 2 both fail. No login, no network:
+ 4. SD CARD — works even if everything above fails. No login, no network:
     Power off, put the card in any Mac or Windows machine, and create an
     empty file called  vajron-nokiosk  on the small FAT32 "bootfs" volume
     (that volume is ${BOOT_DIR} when the Pi is running).
@@ -292,6 +379,7 @@ THREE WAYS BACK IN — in order of convenience:
 
 Other commands:
     vajron-unlock --desktop    stop the kiosk and start the desktop
+    sudo vajron-test-hotkey    re-prove the panic key at any time
     vajron-lock                put the kiosk back
 
 Checks:

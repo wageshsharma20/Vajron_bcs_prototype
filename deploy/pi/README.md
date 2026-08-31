@@ -76,9 +76,31 @@ The Pi comes up in the GCS. That is the whole interface.
 
 ---
 
-## Getting back in — three ways
+## Getting back in — four ways
 
-**1. Console (default).** `Ctrl+Alt+F2`, log in with your Pi username and
+**1. The panic key — `Ctrl` + `Alt` + `Shift` + `Q`.**
+
+Press it any time, even with the GCS fullscreen. The app closes and you get a
+login prompt. Put it back with `vajron-lock`.
+
+This is read straight from the kernel's input devices by `triggerhappy`, not by
+the compositor. That distinction is the whole reason it works: Chromium in kiosk
+mode grabs the keyboard, so a key bound in the window manager, in X, or as a
+browser shortcut gets swallowed by the app you are trying to escape. Reading
+below the compositor is the only place a combination cannot be intercepted.
+
+The installer **tests this key on your actual Pi** before it finishes, and prints
+`TESTED AND WORKING` only if a real key press was detected. Re-test any time:
+
+```bash
+sudo vajron-test-hotkey
+```
+
+If it ever reports `nobody` in the triggerhappy command line, the key will appear
+dead — the daemon runs unprivileged by default and cannot stop the kiosk. Re-run
+`install-on-pi.sh`, which installs a drop-in to run it as root.
+
+**2. Console (default).** `Ctrl+Alt+F2`, log in with your Pi username and
 password, then:
 
 ```bash
@@ -87,10 +109,10 @@ vajron-unlock --desktop    # also start the desktop, if the image has one
 vajron-lock                # put the kiosk back
 ```
 
-**2. SSH.** `ssh <pi-user>@<pi-ip>`, then the same commands. Get the IP from your
+**3. SSH.** `ssh <pi-user>@<pi-ip>`, then the same commands. Get the IP from your
 router, or run `hostname -I` on the Pi before you lock it.
 
-**3. The SD card — the one that cannot fail.**
+**4. The SD card — the one that cannot fail.**
 
 Power the Pi off and put the card in any Mac or Windows machine. The small FAT32
 volume (`bootfs`) mounts normally. Create an empty file on it named:
