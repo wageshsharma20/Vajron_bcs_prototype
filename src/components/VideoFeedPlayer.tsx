@@ -38,9 +38,9 @@ export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFee
       {/* Dims the held first frame so a standing aircraft does not read as a
           live downlink. */}
       {!isArmed && (
-        <View style={styles.standbyVeil}>
+        <View style={[styles.standbyVeil, { backgroundColor: theme.overlayHeavy }]}>
           <Text style={styles.standbyText}>FEED STANDBY</Text>
-          <Text style={styles.standbySub}>Awaiting take-off</Text>
+          <Text style={[styles.standbySub, { color: theme.onBrandMuted }]}>Awaiting take-off</Text>
         </View>
       )}
 
@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
   },
   standbyVeil: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(10,10,10,0.62)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -94,7 +93,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   standbySub: {
-    color: '#BBBBBB',
     fontFamily: typography.fonts.medium,
     fontSize: 12,
     marginTop: 3,

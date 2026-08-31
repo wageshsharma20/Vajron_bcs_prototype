@@ -77,14 +77,14 @@ const MapWaypointEditor = forwardRef<MapWaypointEditorRef, MapWaypointEditorProp
 
           <WaypointOverlay waypoints={placeable} size={18} showLabels />
 
-          <View style={styles.badge}>
+          <View style={[styles.badge, { backgroundColor: theme.overlay }]}>
             <Text style={styles.badgeText}>
               SANJAY LAKE · {waypoints.length} WAYPOINT{waypoints.length === 1 ? '' : 'S'}
             </Text>
           </View>
 
           {waypoints.length === 0 && (
-            <View style={styles.emptyHint} pointerEvents="none">
+            <View style={[styles.emptyHint, { backgroundColor: theme.overlay }]} pointerEvents="none">
               <Text style={styles.emptyText}>No waypoints — generate a survey grid to begin</Text>
             </View>
           )}
@@ -123,7 +123,6 @@ const styles = StyleSheet.create({
     left: 0,
     paddingHorizontal: 8,
     paddingVertical: 5,
-    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   badgeText: {
     color: '#FFFFFF',
@@ -135,7 +134,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(10,10,10,0.45)',
   },
   emptyText: {
     color: '#FFFFFF',

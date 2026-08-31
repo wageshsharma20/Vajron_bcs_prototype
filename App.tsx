@@ -6,14 +6,15 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
-import {
-  NotoSans_400Regular,
-  NotoSans_500Medium,
-  NotoSans_600SemiBold,
-  NotoSans_700Bold,
-
-
-} from '@expo-google-fonts/noto-sans';
+// Imported one weight at a time rather than from the package root. The barrel
+// re-exports all eighteen faces, and Metro has no way to know the other
+// fourteen — every italic, ExtraLight through Black — are never asked for, so a
+// root import shipped 11MB of fonts to serve four. Subpath imports cut the web
+// export by roughly two thirds.
+import { NotoSans_400Regular } from '@expo-google-fonts/noto-sans/400Regular';
+import { NotoSans_500Medium } from '@expo-google-fonts/noto-sans/500Medium';
+import { NotoSans_600SemiBold } from '@expo-google-fonts/noto-sans/600SemiBold';
+import { NotoSans_700Bold } from '@expo-google-fonts/noto-sans/700Bold';
 
 import { lightTheme, ThemeProvider, useTheme } from './src/theme';
 import CustomTabBar from './src/components/CustomTabBar';

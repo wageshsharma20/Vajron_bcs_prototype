@@ -73,7 +73,15 @@ export type ColorTheme = {
   hairline: string;
   /** Alias kept because several components already read this name. */
   border: string;
+  /**
+   * Scrims laid over imagery so a white label survives whatever the camera
+   * happened to be pointing at. `overlay` plates a badge; `overlayHeavy` is the
+   * full veil over a held frame. Both are mixed from the deep green rather than
+   * from neutral black, so a scrim reads as the station dimming its own picture
+   * rather than as a grey wash dropped on top of it.
+   */
   overlay: string;
+  overlayHeavy: string;
 
   /** Chrome: the spine and the navigation rail. */
   brand: string;
@@ -127,7 +135,8 @@ export const PALETTE: ColorTheme = {
   textSecondary: '#4E6357',
   hairline: '#CBDFD2',
   border: '#CBDFD2',
-  overlay: 'rgba(13, 33, 23, 0.6)',
+  overlay: 'rgba(15, 42, 27, 0.62)',
+  overlayHeavy: 'rgba(15, 42, 27, 0.74)',
   brand: '#1E5233',
   onBrand: '#FFFFFF',
   onBrandMuted: '#A3C9AE',

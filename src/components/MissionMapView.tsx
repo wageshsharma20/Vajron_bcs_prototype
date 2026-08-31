@@ -51,7 +51,7 @@ export default function MissionMapView({ player, isArmed, progress }: MissionMap
 
         <WaypointOverlay size={14} showLabels={false} progress={progress} />
 
-        <View style={styles.badge}>
+        <View style={[styles.badge, { backgroundColor: theme.overlay }]}>
           <MapPin size={11} color="#FFFFFF" />
           <Text style={styles.badgeText}>
             {isArmed ? 'FLIGHT PATH · LIVE' : 'FLIGHT PATH · STANDBY'}
@@ -93,7 +93,6 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 5,
-    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   badgeText: {
     color: '#FFFFFF',

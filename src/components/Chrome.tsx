@@ -152,7 +152,7 @@ export function PageHeader({
         </View>
 
         <Text style={[styles.productName, { color: theme.onBrand }]}>
-          Ground Control Station
+          {'GROUND CONTROL\nSTATION'}
         </Text>
         <View
           style={{
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontFamily: typography.fonts.display,
-    fontSize: 21,
+    fontSize: 18,
     lineHeight: 26,
     letterSpacing: 0.2,
     marginBottom: 26,
