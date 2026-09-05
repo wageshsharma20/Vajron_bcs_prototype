@@ -65,13 +65,53 @@ checksum.
 
 ## Commanding
 
-Not implemented, on purpose.
+Off by default. Two separate opt-ins, because the commands are not equally
+dangerous:
 
-Sending `COMMAND_LONG` requires a correct CRC, and an arm/takeoff/RTL path built
-on a CRC seed that has not been verified against real hardware is not something
-to guess at. **Use QGroundControl to command the aircraft.** If commanding from
-the GCS is wanted later, the right move is `pip install pymavlink` and using its
-generated message definitions rather than extending this hand-rolled encoder.
+```bash
+# RTL, LAND, PAUSE/CONTINUE only
+python3 mavlink_bridge.py --command-link udpout:127.0.0.1:14550
+
+# ...and additionally ARM, DISARM, TAKEOFF
+python3 mavlink_bridge.py --command-link udpout:127.0.0.1:14550 --allow-arm
+```
+
+The first set brings an aircraft down or holds it still; the worst case of an
+accidental one is an interrupted survey. The second set spins propellers, and a
+stray HTTP request should not be able to do that just because telemetry happened
+to be wired up.
+
+`--command-link` takes any pymavlink connection string: `udpout:host:port`,
+`tcp:host:port`, or a serial device like `/dev/ttyACM0`. It is a separate link
+from the telemetry input, because QGC's forwarding is one-way.
+
+Commands are sent with **pymavlink**, not the hand-rolled encoder used for
+receiving. A `COMMAND_LONG` needs a correct per-message CRC seed; pymavlink is
+the reference implementation that generates them, and an arm or takeoff built on
+a guessed seed is either silently ignored or not the command you meant.
+
+```bash
+pip install pymavlink        # or: pip install -r requirements.txt
+```
+
+The bridge reports the autopilot's own verdict rather than assuming success:
+
+```json
+{"ok": true, "command": "rtl", "result": "MAV_RESULT_ACCEPTED"}
+```
+
+A refused command comes back `ok: false` with the real `MAV_RESULT`, and the GCS
+shows it. A rejected RTL displayed as accepted is how an operator ends up
+believing a drone is coming home while it carries on.
+
+`test_commands.py` exercises the whole path against a fake autopilot that
+decodes `COMMAND_LONG` and answers `COMMAND_ACK` — encoding, targeting,
+acknowledgement and both safety gates. Only the radio is missing.
+
+### Still untested against real hardware
+
+Every check above runs against a simulated autopilot. Before trusting this with
+a real aircraft, fly it in SITL first, then bench-test with props removed.
 
 ## What is not in MAVLink
 

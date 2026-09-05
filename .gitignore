@@ -46,3 +46,8 @@ yarn-error.*
 # Tracking it puts a fresh 30MB blob in history on every rebuild, and the file
 # is only ever copied from the dev machine to the Pi by hand.
 deploy/pi/vajron-gcs-pi.tar.gz
+
+# Locally vendored pymavlink. 62MB of macOS-arm64 wheels that would not run on
+# the Pi anyway -- install it there with pip instead of copying this across.
+bridge/vendor/
+bridge/.venv/

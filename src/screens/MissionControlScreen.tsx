@@ -18,6 +18,8 @@ const TOTAL_WAYPOINTS = FLIGHT_WAYPOINTS.length;
 import GimbalControlPad from '../components/GimbalControlPad';
 import MissionProgressBar from '../components/MissionProgressBar';
 import ConfirmActionDialog from '../components/ConfirmActionDialog';
+import { Snackbar } from 'react-native-paper';
+import { useLinkStore } from '../data/linkStore';
 
 export default function MissionControlScreen({ route }: any) {
   const droneId = route.params?.droneId || 'DRONE-01'; // Fallback for direct tab click
@@ -57,20 +59,40 @@ export default function MissionControlScreen({ route }: any) {
   const currentWaypoint = Math.round(missionFraction * TOTAL_WAYPOINTS);
   const missionProgress = isArmed ? missionFraction : undefined;
 
-  const handlePauseToggle = () => {
-    setIsPaused(!isPaused);
-    telemetryService.sendCommand(droneId, isPaused ? 'resume' : 'hold');
+  // What the aircraft said about the last command. A command that was refused
+  // has to be visible: silence after pressing RTL reads as "it worked".
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const runCommand = async (command: string, payload?: any) => {
+    const result = await telemetryService.sendCommand(droneId, command, payload);
+    if (!result.ok) {
+      setNotice(result.error ?? `${command.toUpperCase()} refused: ${result.result}`);
+    }
+    return result;
+  };
+
+  const handlePauseToggle = async () => {
+    const next = !isPaused;
+    const result = await runCommand(isPaused ? 'resume' : 'hold');
+    // Only move the button if the aircraft agreed, or there is no aircraft.
+    if (result.ok) setIsPaused(next);
   };
 
   const handleTakeOffConfirm = () => {
     setTakeOffDialogVisible(false);
-    telemetryService.sendCommand(droneId, 'takeoff');
+    void runCommand('takeoff', { altitude: 30 });
   };
 
-  const handleRtlConfirm = () => {
+  const handleRtlConfirm = async () => {
     setRtlDialogVisible(false);
-    
-    // Simulate RTL returning and resetting everything to Time 0
+    const result = await runCommand('rtl');
+
+    // On a live link the aircraft is now flying home and the screen must keep
+    // showing that. Rewinding to time zero here would blank a real flight that
+    // is still in the air — the reset belongs to the canned replay alone.
+    if (useLinkStore.getState().mode === 'live') return;
+    if (!result.ok) return;
+
     telemetryService.resetReplay(droneId);
     useTelemetryStore.getState().resetTelemetry(droneId);
     setFlightPath([]);
@@ -186,6 +208,15 @@ export default function MissionControlScreen({ route }: any) {
         onConfirm={handleTakeOffConfirm}
         onCancel={() => setTakeOffDialogVisible(false)}
       />
+
+      <Snackbar
+        visible={notice !== null}
+        onDismiss={() => setNotice(null)}
+        duration={6000}
+        action={{ label: 'Dismiss', onPress: () => setNotice(null) }}
+      >
+        {notice ?? ''}
+      </Snackbar>
 
       <ConfirmActionDialog
         visible={rtlDialogVisible}

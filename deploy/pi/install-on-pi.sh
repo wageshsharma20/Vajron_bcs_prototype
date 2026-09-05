@@ -154,6 +154,16 @@ if [[ -d "${SCRIPT_DIR}/bridge" ]]; then
   sudo systemctl daemon-reload
   sudo systemctl enable --now vajron-mavlink.service
   echo "    bridge running - point QGroundControl's MAVLink forwarding at this Pi:14551"
+  # Receive-only unless someone deliberately turns commanding on: the unit ships
+  # without --command-link, and enabling it is an edit plus a restart. A ground
+  # station that can arm an aircraft the moment it is installed is not a default
+  # anyone should get by accident.
+  if python3 -c "import pymavlink" 2>/dev/null; then
+    echo "    pymavlink present - commanding can be enabled by editing the unit"
+  else
+    echo "    (telemetry only; for commanding: pip3 install pymavlink, then add"
+    echo "     --command-link to /etc/systemd/system/vajron-mavlink.service)"
+  fi
 else
   echo "    WARNING: no bridge/ in the payload; the GCS will stay in demo mode" >&2
 fi

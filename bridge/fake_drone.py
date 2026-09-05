@@ -1,10 +1,56 @@
 #!/usr/bin/env python3
-"""Pretends to be an aircraft on UDP so the GCS can be tested without one."""
-import math, socket, struct, sys, time
+"""Pretends to be an aircraft so the GCS can be tested without one.
+
+Sends telemetry to the bridge, and — if pymavlink is importable — also listens
+for COMMAND_LONG on a second port and answers with COMMAND_ACK, so RTL and
+TAKEOFF can be exercised end to end from the interface.
+
+    python3 fake_drone.py [telemetry-port] [command-port]
+"""
+import math, socket, struct, sys, threading, time
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 14551
+CMD_PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 14552
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 seq = 0
+
+
+def serve_commands():
+    """Accept COMMAND_LONG and acknowledge it, the way an autopilot would."""
+    try:
+        from pymavlink.dialects.v20 import ardupilotmega as mavlink
+    except ImportError:
+        print('  (no pymavlink -> telemetry only, commands will not be answered)')
+        return
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(('0.0.0.0', CMD_PORT))
+
+    class Out:
+        peer = None
+        def write(self, data):
+            if self.peer:
+                sock.sendto(data, self.peer)
+
+    out = Out()
+    mav = mavlink.MAVLink(out, srcSystem=1, srcComponent=1)
+    print(f'  commands  <- udp://0.0.0.0:{CMD_PORT}')
+    while True:
+        data, addr = sock.recvfrom(2048)
+        out.peer = addr
+        try:
+            for m in mav.parse_buffer(data) or []:
+                if m.get_type() == 'COMMAND_LONG':
+                    name = mavlink.enums['MAV_CMD'][m.command].name \
+                        if m.command in mavlink.enums['MAV_CMD'] else str(m.command)
+                    print(f'  [vehicle] got {name} -> ACCEPTED')
+                    mav.command_ack_send(m.command, mavlink.MAV_RESULT_ACCEPTED)
+        except Exception:
+            pass
+
+
+threading.Thread(target=serve_commands, daemon=True).start()
 
 def v2(msgid, payload):
     global seq
@@ -14,7 +60,7 @@ def v2(msgid, payload):
            + payload + b'\x00\x00')
     s.sendto(pkt, ('127.0.0.1', PORT))
 
-print(f'fake drone -> udp://127.0.0.1:{PORT}  (ctrl-c to stop)')
+print(f'fake drone\n  telemetry -> udp://127.0.0.1:{PORT}  (ctrl-c to stop)')
 t = 0.0
 while True:
     lat = 28.535517 + 0.0009 * math.sin(t / 12)

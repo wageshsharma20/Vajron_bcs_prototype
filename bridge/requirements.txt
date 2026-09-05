@@ -1,0 +1,4 @@
+# Only needed to SEND commands. Receiving telemetry uses the standard library
+# alone, so a bridge that never commands needs nothing installed at all --
+# which is what lets it run on a field Pi with no internet.
+pymavlink

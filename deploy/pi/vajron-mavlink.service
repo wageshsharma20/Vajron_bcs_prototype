@@ -7,11 +7,18 @@ After=network.target
 
 [Service]
 Type=simple
+# Belt and braces with the in-process line buffering: without unbuffered
+# output, journalctl shows nothing until the process exits.
+Environment=PYTHONUNBUFFERED=1
 # python3 ships with Raspberry Pi OS and the bridge imports nothing outside the
 # standard library, so this needs no install step and no internet in the field.
 #
 # 14551, not 14550: QGroundControl binds 14550 to listen for vehicles. If QGC
 # ever runs on this same Pi, a bridge on 14550 would fail to start.
+# Receive-only as shipped. To let the GCS command the aircraft, append
+#   --command-link udpout:<vehicle-host>:14550
+# and, only if you want ARM/TAKEOFF from the GCS as well, --allow-arm.
+# Needs pymavlink:  sudo pip3 install pymavlink
 ExecStart=/usr/bin/python3 /opt/vajron-gcs/bridge/mavlink_bridge.py \
           --udp-port 14551 --http-port 8082 --drone-id DRONE-01
 Restart=always

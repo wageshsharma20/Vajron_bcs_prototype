@@ -24,12 +24,26 @@ install anything.
 
 import argparse
 import json
+import sys
 import math
 import socket
 import struct
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+# Optional. Receiving telemetry needs nothing outside the standard library, and
+# that has to stay true because the field Pi has no internet. Commanding is the
+# one thing worth a dependency: a COMMAND_LONG needs a correct per-message CRC
+# seed, and pymavlink is the reference implementation that generates them. The
+# alternative -- hand-writing those seeds -- means an arm or takeoff that is
+# either silently ignored by the autopilot or, worse, not the command intended.
+try:
+    from pymavlink import mavutil
+    HAVE_PYMAVLINK = True
+except ImportError:
+    mavutil = None
+    HAVE_PYMAVLINK = False
 
 # ── MAVLink wire format ──────────────────────────────────────────────────────
 # v1: FE | len seq sys comp msgid |            payload | crc(2)
@@ -249,6 +263,101 @@ class Link:
             }
 
 
+class Commander:
+    """Sends commands to the aircraft. Off unless explicitly switched on.
+
+    Two separate opt-ins, because the commands are not equally dangerous:
+
+      --command-link   enables RTL, LAND and PAUSE/CONTINUE. These bring an
+                       aircraft down or hold it still; the worst case of an
+                       accidental one is an interrupted survey.
+      --allow-arm      additionally enables ARM, DISARM and TAKEOFF. These spin
+                       propellers. A stray HTTP request should not be able to
+                       do that just because telemetry was wired up.
+
+    Every command is logged with its result before it is returned.
+    """
+
+    SAFE = {
+        'rtl':      ('MAV_CMD_NAV_RETURN_TO_LAUNCH', ()),
+        'land':     ('MAV_CMD_NAV_LAND',             ()),
+        'hold':     ('MAV_CMD_DO_PAUSE_CONTINUE',    (0,)),
+        'pause':    ('MAV_CMD_DO_PAUSE_CONTINUE',    (0,)),
+        'resume':   ('MAV_CMD_DO_PAUSE_CONTINUE',    (1,)),
+    }
+    ARMING = {
+        'arm':      ('MAV_CMD_COMPONENT_ARM_DISARM', (1,)),
+        'disarm':   ('MAV_CMD_COMPONENT_ARM_DISARM', (0,)),
+        'takeoff':  ('MAV_CMD_NAV_TAKEOFF',          ()),   # altitude filled in
+    }
+
+    def __init__(self, connstr, allow_arm, target_system=1, target_component=1):
+        self.connstr = connstr
+        self.allow_arm = allow_arm
+        self.target = (target_system, target_component)
+        self.lock = threading.Lock()
+        self.acks = {}
+        self.conn = mavutil.mavlink_connection(
+            connstr, source_system=255, source_component=190)
+        threading.Thread(target=self._read_acks, daemon=True).start()
+
+    def _read_acks(self):
+        while True:
+            try:
+                msg = self.conn.recv_match(type='COMMAND_ACK', blocking=True, timeout=5)
+            except Exception:
+                time.sleep(0.5)
+                continue
+            if msg is not None:
+                with self.lock:
+                    self.acks[msg.command] = (msg.result, time.time())
+
+    def available(self, name):
+        if name in self.SAFE:
+            return True, ''
+        if name in self.ARMING:
+            if not self.allow_arm:
+                return False, ("this command spins propellers and the bridge was "
+                               "started without --allow-arm")
+            return True, ''
+        return False, f'unknown command "{name}"'
+
+    def send(self, name, altitude=None):
+        ok, why = self.available(name)
+        if not ok:
+            return {'ok': False, 'error': why}
+
+        cmd_name, params = (self.SAFE.get(name) or self.ARMING[name])
+        cmd_id = getattr(mavutil.mavlink, cmd_name)
+        args = list(params) + [0.0] * (7 - len(params))
+        if name == 'takeoff':
+            args[6] = float(altitude if altitude is not None else 15.0)  # param7 = alt
+
+        with self.lock:
+            self.acks.pop(cmd_id, None)
+        self.conn.mav.command_long_send(self.target[0], self.target[1],
+                                        cmd_id, 0, *args)
+
+        # Report what the aircraft actually said. Assuming success is how a
+        # rejected command becomes a UI that claims the drone is returning home
+        # when it is still sitting on the pad.
+        deadline = time.time() + 2.5
+        while time.time() < deadline:
+            with self.lock:
+                hit = self.acks.get(cmd_id)
+            if hit:
+                result, _ = hit
+                accepted = result == mavutil.mavlink.MAV_RESULT_ACCEPTED
+                label = mavutil.mavlink.enums['MAV_RESULT'][result].name \
+                    if result in mavutil.mavlink.enums['MAV_RESULT'] else str(result)
+                print(f'[cmd] {name} -> {cmd_name} : {label}')
+                return {'ok': accepted, 'command': name, 'result': label}
+            time.sleep(0.05)
+
+        print(f'[cmd] {name} -> {cmd_name} : NO ACK')
+        return {'ok': False, 'command': name, 'error': 'no acknowledgement from the aircraft'}
+
+
 HTML_HINT = b"""<!doctype html><meta charset=utf-8>
 <title>Vajron MAVLink bridge</title>
 <body style="font:14px system-ui;padding:2rem;max-width:40rem">
@@ -263,7 +372,7 @@ HTML_HINT = b"""<!doctype html><meta charset=utf-8>
 """
 
 
-def make_handler(link, rate_hz):
+def make_handler(link, rate_hz, commander):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
 
@@ -278,6 +387,7 @@ def make_handler(link, rate_hz):
         def do_OPTIONS(self):
             self.send_response(204)
             self._cors()
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
             self.send_header('Access-Control-Allow-Headers', 'content-type')
             self.end_headers()
 
@@ -288,8 +398,13 @@ def make_handler(link, rate_hz):
                 return self._json(link.state())
             if self.path.startswith('/health'):
                 s = link.state()
-                return self._json({'ok': True, 'connected': s['connected'],
-                                   'packets': s['packets']})
+                return self._json({
+                    'ok': True,
+                    'connected': s['connected'],
+                    'packets': s['packets'],
+                    'commanding': commander is not None,
+                    'armingAllowed': bool(commander and commander.allow_arm),
+                })
             body = HTML_HINT
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
@@ -298,9 +413,31 @@ def make_handler(link, rate_hz):
             self.end_headers()
             self.wfile.write(body)
 
-        def _json(self, obj):
+        def do_POST(self):
+            if not self.path.startswith('/command'):
+                return self._json({'ok': False, 'error': 'not found'})
+            if commander is None:
+                # 503, not 200-with-error: "commanding is switched off" is a
+                # different thing from "the aircraft refused", and the UI has
+                # to be able to tell them apart.
+                return self._json({
+                    'ok': False,
+                    'error': 'commanding is disabled; start the bridge with --command-link',
+                }, status=503)
+            try:
+                n = int(self.headers.get('Content-Length') or 0)
+                body = json.loads(self.rfile.read(n) or b'{}')
+            except (ValueError, json.JSONDecodeError):
+                return self._json({'ok': False, 'error': 'malformed request'}, status=400)
+
+            name = str(body.get('command', '')).lower()
+            alt = body.get('altitude')
+            result = commander.send(name, alt)
+            return self._json(result, status=200 if result.get('ok') else 409)
+
+        def _json(self, obj, status=200):
             body = json.dumps(obj).encode()
-            self.send_response(200)
+            self.send_response(status)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Content-Length', str(len(body)))
             self._cors()
@@ -338,7 +475,34 @@ def main():
     ap.add_argument('--http-port', type=int, default=8082, help='port the GCS page reads from')
     ap.add_argument('--drone-id', default='DRONE-01', help='which aircraft in the GCS this feeds')
     ap.add_argument('--rate', type=float, default=10.0, help='stream rate in Hz')
+    ap.add_argument('--command-link', default=None, metavar='CONNSTR',
+                    help='pymavlink connection for SENDING commands, e.g. '
+                         'udpout:127.0.0.1:14550, tcp:127.0.0.1:5760, /dev/ttyACM0. '
+                         'Omit and the bridge is receive-only.')
+    ap.add_argument('--allow-arm', action='store_true',
+                    help='additionally permit ARM, DISARM and TAKEOFF. These spin '
+                         'propellers; off unless you pass this.')
+    ap.add_argument('--target-system', type=int, default=1)
+    ap.add_argument('--target-component', type=int, default=1)
     args = ap.parse_args()
+
+    # Line-buffer stdout. Python block-buffers when it is not writing to a
+    # terminal, so under systemd every print sits in a 4 KB buffer and
+    # `journalctl -u vajron-mavlink -f` shows nothing at all until the process
+    # exits -- which looks exactly like a bridge that is not receiving.
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except AttributeError:
+        pass
+
+    commander = None
+    if args.command_link:
+        if not HAVE_PYMAVLINK:
+            print('[bridge] ERROR: --command-link needs pymavlink.')
+            print('[bridge]        pip install pymavlink')
+            raise SystemExit(2)
+        commander = Commander(args.command_link, args.allow_arm,
+                              args.target_system, args.target_component)
 
     link = Link(args.udp_host, args.udp_port, args.drone_id)
     threading.Thread(target=link.run, daemon=True).start()
@@ -348,7 +512,14 @@ def main():
     print(f'[bridge] feeding    : {args.drone_id} at {args.rate:g} Hz')
     print('[bridge] waiting for a heartbeat...')
 
-    srv = ThreadingHTTPServer(('0.0.0.0', args.http_port), make_handler(link, args.rate))
+    if commander is None:
+        print('[bridge] commanding : OFF (receive-only)')
+    else:
+        print(f'[bridge] commanding : {args.command_link}'
+              f'{"  (arm/takeoff ENABLED)" if args.allow_arm else "  (arm/takeoff blocked)"}')
+
+    srv = ThreadingHTTPServer(('0.0.0.0', args.http_port),
+                              make_handler(link, args.rate, commander))
     srv.daemon_threads = True
     try:
         srv.serve_forever()

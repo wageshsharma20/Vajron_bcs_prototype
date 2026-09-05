@@ -1,6 +1,8 @@
 import { TelemetryFrame, DroneAlert, GimbalState } from '../data/types';
 import { mockFlightPath } from '../data/mockFlightPath';
 import { useTelemetryStore } from '../data/useTelemetryStore';
+import { useLinkStore } from '../data/linkStore';
+import { sendVehicleCommand, CommandName, CommandResult } from './commandLink';
 
 type AlertCallback = (alert: DroneAlert) => void;
 
@@ -18,10 +20,24 @@ class TelemetryService {
     return () => this.alertSubscribers.delete(cb);
   }
 
-  sendCommand(droneId: string, command: string, payload?: any) {
-    console.log(`[Command -> ${droneId}] ${command}`, payload);
-    
-    // In mock mode, we simulate UI response to command
+  /**
+   * Acts on a command, against the real aircraft when there is one.
+   *
+   * On a live link the store is deliberately NOT updated here. The optimistic
+   * write below is right for the demo, where nothing else will ever move the
+   * state, and wrong for a real flight, where the next HEARTBEAT reports what
+   * the aircraft is actually doing. Writing 'rtl' locally and then having the
+   * autopilot refuse would leave the screen showing a return-to-home that is
+   * not happening.
+   */
+  async sendCommand(droneId: string, command: string, payload?: any): Promise<CommandResult> {
+    const live = useLinkStore.getState().mode === 'live';
+    console.log(`[Command -> ${droneId}] ${command}${live ? ' (live)' : ' (demo)'}`, payload);
+
+    if (live) {
+      return sendVehicleCommand(command as CommandName, payload ?? {});
+    }
+
     if (command === 'takeoff') {
       useTelemetryStore.getState().updateTelemetry(droneId, { flightMode: 'auto', isArmed: true });
     } else if (command === 'hold' || command === 'pause') {
@@ -31,6 +47,7 @@ class TelemetryService {
     } else if (command === 'rtl') {
       useTelemetryStore.getState().updateTelemetry(droneId, { flightMode: 'rtl' });
     }
+    return { ok: true, result: 'demo' };
   }
 
   sendGimbalCommand(droneId: string, state: Partial<GimbalState>) {
