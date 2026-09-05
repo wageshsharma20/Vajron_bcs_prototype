@@ -8,6 +8,10 @@ TAKEOFF can be exercised end to end from the interface.
     python3 fake_drone.py [telemetry-port] [command-port]
 """
 import math, socket, struct, sys, threading, time
+import os as _os, sys as _sys
+_v = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'vendor')
+if _os.path.isdir(_v) and _v not in _sys.path:
+    _sys.path.insert(0, _v)   # find a local pymavlink without PYTHONPATH
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 14551
 CMD_PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 14552

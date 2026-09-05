@@ -24,6 +24,7 @@ install anything.
 
 import argparse
 import json
+import os
 import sys
 import math
 import socket
@@ -38,6 +39,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # seed, and pymavlink is the reference implementation that generates them. The
 # alternative -- hand-writing those seeds -- means an arm or takeoff that is
 # either silently ignored by the autopilot or, worse, not the command intended.
+# Look in ./vendor before site-packages, so a pymavlink dropped next to this
+# file is found without the caller having to set PYTHONPATH.
+_vendor = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vendor')
+if os.path.isdir(_vendor) and _vendor not in sys.path:
+    sys.path.insert(0, _vendor)
+
 try:
     from pymavlink import mavutil
     HAVE_PYMAVLINK = True

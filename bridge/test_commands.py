@@ -6,6 +6,10 @@ with COMMAND_ACK, so the encoding, the targeting and the acknowledgement path
 are all exercised for real. Only the radio is missing.
 """
 import json, socket, subprocess, sys, threading, time, urllib.error, urllib.request
+import os as _os, sys as _sys
+_v = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'vendor')
+if _os.path.isdir(_v) and _v not in _sys.path:
+    _sys.path.insert(0, _v)   # find a local pymavlink without PYTHONPATH
 from pymavlink.dialects.v20 import ardupilotmega as mavlink
 
 PY, VPORT, HTTP, UDP = sys.executable, 14780, 8087, 14781

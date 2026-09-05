@@ -18,10 +18,17 @@ is deliberate, not unfinished: see "Commanding" below.
 ## Running it
 
 ```bash
-python3 mavlink_bridge.py
+./start.sh
 ```
 
-Defaults to UDP 14551 in, HTTP 8082 out. Python 3 standard library only — no
+Defaults to UDP 14551 in, HTTP 8082 out.
+
+`start.sh` picks an interpreter that can actually load pymavlink. On this Mac
+the Homebrew pythons cannot: they link against a newer libexpat than macOS
+ships, so `import pymavlink` fails on them and commanding would quietly be
+unavailable. Apple's `/usr/bin/python3` is fine. `mavlink_bridge.py` also adds
+its own `vendor/` to the path, so neither `PYTHONPATH` nor a virtualenv is
+needed. Python 3 standard library only — no
 `pip install`, which is what lets it run on a field Pi with no internet.
 
 | Endpoint | What it gives you |
@@ -33,7 +40,7 @@ Defaults to UDP 14551 in, HTTP 8082 out. Python 3 standard library only — no
 ## Testing without an aircraft
 
 ```bash
-python3 fake_drone.py
+./run-fake-drone.sh
 ```
 
 Flies a circuit over the park at 5 Hz with a draining battery. The GCS should
@@ -70,10 +77,10 @@ dangerous:
 
 ```bash
 # RTL, LAND, PAUSE/CONTINUE only
-python3 mavlink_bridge.py --command-link udpout:127.0.0.1:14550
+./start.sh --command-link udpout:127.0.0.1:14550
 
 # ...and additionally ARM, DISARM, TAKEOFF
-python3 mavlink_bridge.py --command-link udpout:127.0.0.1:14550 --allow-arm
+./start.sh --command-link udpout:127.0.0.1:14550 --allow-arm
 ```
 
 The first set brings an aircraft down or holds it still; the worst case of an
