@@ -1,7 +1,7 @@
 {
   "_comment": "Chromium managed policy for the Vajron GCS kiosk. Installed to /etc/chromium/policies/managed/. Confines the browser to the GCS itself: even if someone exits kiosk mode, there is nowhere else to browse, no devtools, no incognito, and no way to edit these settings from the UI.",
 
-  "URLAllowlist": ["http://localhost:8080"],
+  "URLAllowlist": ["http://localhost:8080", "http://localhost:8082"],
   "URLBlocklist": ["*"],
 
   "DeveloperToolsAvailability": 2,

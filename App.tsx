@@ -17,6 +17,7 @@ import { NotoSans_600SemiBold } from '@expo-google-fonts/noto-sans/600SemiBold';
 import { NotoSans_700Bold } from '@expo-google-fonts/noto-sans/700Bold';
 
 import { lightTheme, ThemeProvider, useTheme } from './src/theme';
+import { startMavlinkLink } from './src/services/mavlinkLink';
 import CustomTabBar from './src/components/CustomTabBar';
 
 import FleetDashboardScreen from './src/screens/FleetDashboardScreen';
@@ -68,6 +69,11 @@ const navTheme = {
 
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  // Opened once for the life of the app. If no bridge is running the stream
+  // simply never connects and the GCS stays in demo mode, which is the right
+  // behaviour on a dev machine with no aircraft attached.
+  useEffect(() => startMavlinkLink(), []);
 
   useEffect(() => {
     async function loadFonts() {

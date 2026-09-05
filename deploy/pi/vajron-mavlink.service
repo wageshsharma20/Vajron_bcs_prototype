@@ -1,0 +1,22 @@
+[Unit]
+# Turns the MAVLink stream into something a browser can read.
+# The GCS page has no way to open a UDP socket, so without this it can only
+# ever show its canned demo replay.
+Description=Vajron GCS MAVLink bridge
+After=network.target
+
+[Service]
+Type=simple
+# python3 ships with Raspberry Pi OS and the bridge imports nothing outside the
+# standard library, so this needs no install step and no internet in the field.
+#
+# 14551, not 14550: QGroundControl binds 14550 to listen for vehicles. If QGC
+# ever runs on this same Pi, a bridge on 14550 would fail to start.
+ExecStart=/usr/bin/python3 /opt/vajron-gcs/bridge/mavlink_bridge.py \
+          --udp-port 14551 --http-port 8082 --drone-id DRONE-01
+Restart=always
+RestartSec=2
+User=vajron-gcs-user-placeholder
+
+[Install]
+WantedBy=multi-user.target

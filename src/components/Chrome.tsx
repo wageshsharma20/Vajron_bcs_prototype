@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, typography } from '../theme';
+import { STATUS_RAMPS } from '../theme';
+import { useLinkStore, LinkMode } from '../data/linkStore';
 
 /** Padding inside the white identity plate, shared by the style and the
  * wordmark measurement so the two cannot disagree. */
@@ -46,6 +48,58 @@ export function useHeaderColors() {
  * carefully — two rules of the same weight say the two boundaries mean the
  * same thing.
  */
+/**
+ * Says whether the numbers on this screen are real.
+ *
+ * On the spine, so it is present on every screen rather than only where someone
+ * thought to add it. A ground station that can display a convincing simulation
+ * has to state, permanently and without being asked, which one you are looking
+ * at — the failure this prevents is an operator reading a smooth canned replay
+ * as a live aircraft.
+ */
+export function LinkBadge() {
+  const { theme, sp } = useTheme();
+  const mode = useLinkStore(state => state.mode);
+
+  const look: Record<LinkMode, { label: string; fg: string; bg: string }> = {
+    live: { label: 'LIVE TELEMETRY', fg: theme.onBrand, bg: 'transparent' },
+    lost: { label: 'LINK LOST', fg: '#FFFFFF', bg: theme.accentRed },
+    // The pale amber reads on the deep-green spine, where accentAmber — tuned
+    // for dark text on a white page — would sink into the background.
+    demo: { label: 'DEMO DATA', fg: STATUS_RAMPS.amber[0], bg: 'transparent' },
+  };
+  const { label, fg, bg } = look[mode];
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        backgroundColor: bg,
+        paddingHorizontal: bg === 'transparent' ? 0 : 7,
+        paddingVertical: bg === 'transparent' ? 0 : 4,
+        marginBottom: sp(10),
+      }}
+      accessibilityRole="text"
+      accessibilityLabel={`Telemetry source: ${label}`}
+    >
+      <View
+        style={{
+          width: 7,
+          height: 7,
+          borderRadius: 4,
+          backgroundColor: mode === 'live' ? theme.onBrandMuted : fg,
+          marginRight: 7,
+        }}
+      />
+      <Text style={{ fontFamily: typography.fonts.bold, fontSize: 10, letterSpacing: 1.4, color: fg }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 export function Rule({
   weight = 'hair',
   inset = false,
@@ -167,6 +221,7 @@ export function PageHeader({
       </View>
 
       <View>
+        <LinkBadge />
         {meta ? (
           <Text style={[styles.spineMeta, { color: theme.onBrandMuted }]}>{meta}</Text>
         ) : null}

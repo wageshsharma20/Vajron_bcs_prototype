@@ -145,6 +145,19 @@ sudo mkdir -p "$APP_DIR"
 sudo rm -rf "${APP_DIR}/dist"
 sudo cp -r "${SCRIPT_DIR}/dist" "${APP_DIR}/dist"
 
+echo "==> Installing the MAVLink bridge (UDP 14551 -> HTTP 8082)"
+if [[ -d "${SCRIPT_DIR}/bridge" ]]; then
+  sudo rm -rf "${APP_DIR}/bridge"
+  sudo cp -r "${SCRIPT_DIR}/bridge" "${APP_DIR}/bridge"
+  sed "s/vajron-gcs-user-placeholder/${RUN_USER}/" "${SCRIPT_DIR}/vajron-mavlink.service" \
+    | sudo tee /etc/systemd/system/vajron-mavlink.service > /dev/null
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now vajron-mavlink.service
+  echo "    bridge running - point QGroundControl's MAVLink forwarding at this Pi:14551"
+else
+  echo "    WARNING: no bridge/ in the payload; the GCS will stay in demo mode" >&2
+fi
+
 echo "==> Installing the file server (port ${PORT})"
 sed "s/vajron-gcs-user-placeholder/${RUN_USER}/" "${SCRIPT_DIR}/vajron-gcs.service" \
   | sudo tee /etc/systemd/system/vajron-gcs.service > /dev/null

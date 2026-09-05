@@ -23,9 +23,11 @@ npx expo export -p web
 echo "==> Staging payload"
 mkdir -p "${STAGE}/vajron-gcs-pi"
 cp -r "${PROJECT}/dist" "${STAGE}/vajron-gcs-pi/dist"
+cp -r "${PROJECT}/bridge" "${STAGE}/vajron-gcs-pi/bridge"
 cp "${HERE}/install-on-pi.sh" \
    "${HERE}/vajron-gcs.service" \
    "${HERE}/vajron-gcs-kiosk.service" \
+   "${HERE}/vajron-mavlink.service" \
    "${HERE}/vajron-unlock" \
    "${HERE}/vajron-lock" \
    "${HERE}/vajron-panic" \

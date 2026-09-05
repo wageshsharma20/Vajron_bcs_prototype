@@ -39,6 +39,21 @@ class TelemetryService {
     useTelemetryStore.getState().updateGimbal(droneId, state);
   }
 
+  /**
+   * Stop the canned replay for good.
+   *
+   * Called the instant a real aircraft is seen. Deliberately has no counterpart
+   * that restarts it: if a live link drops, the correct behaviour is frozen
+   * numbers under a LINK LOST banner, not a smooth fictional flight that an
+   * operator could mistake for the real one.
+   */
+  stopMockReplay() {
+    if (this.mockInterval) {
+      clearInterval(this.mockInterval);
+      this.mockInterval = null;
+    }
+  }
+
   resetReplay(droneId: string) {
     this.pathIndex = 0;
     // Disarm it immediately so the interval loop doesn't push any new flight frames
