@@ -51,3 +51,7 @@ deploy/pi/vajron-gcs-pi.tar.gz
 # the Pi anyway -- install it there with pip instead of copying this across.
 bridge/vendor/
 bridge/.venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
