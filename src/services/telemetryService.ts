@@ -31,10 +31,20 @@ class TelemetryService {
    * not happening.
    */
   async sendCommand(droneId: string, command: string, payload?: any): Promise<CommandResult> {
-    const live = useLinkStore.getState().mode === 'live';
-    console.log(`[Command -> ${droneId}] ${command}${live ? ' (live)' : ' (demo)'}`, payload);
+    // The question is "has a real aircraft ever been seen", not "is the link
+    // healthy right now". Those differ in exactly one state, and it is the
+    // dangerous one: 'lost' means a real vehicle WAS reporting and has gone
+    // quiet. Testing mode === 'live' sent every command issued during a link
+    // drop down the demo path, where nothing is transmitted, {ok:true} is
+    // returned, and the operator sees a silent success for a command that
+    // never left the machine.
+    const real = useLinkStore.getState().mode !== 'demo';
+    console.log(`[Command -> ${droneId}] ${command}${real ? ' (live)' : ' (demo)'}`, payload);
 
-    if (live) {
+    if (real) {
+      // Attempted even while the link is lost. An unreachable bridge or a
+      // refusing autopilot both come back as an honest failure the operator
+      // can see, which beats inventing a success.
       return sendVehicleCommand(command as CommandName, payload ?? {});
     }
 

@@ -77,7 +77,14 @@ export function startMavlinkLink() {
       telemetryService.stopMockReplay();
       console.log(`[mavlink] live vehicle sysid ${vehicle.sysid} — demo replay stopped`);
     }
-    store.markLive(payload.packets ?? 0);
+    // Stamped with the aircraft's own silence, not this message's arrival.
+    // The bridge emits on a fixed 10 Hz timer and keeps reporting connected
+    // for 5s after the last packet, so stamping arrival time refreshed the
+    // watchdog every 100ms and LINK_TIMEOUT_MS could never fire while the
+    // bridge was alive — it caught a dead transport but never a silent
+    // aircraft, which is the case it exists for. `?? 0` keeps the old
+    // behaviour against a bridge that does not send the field.
+    store.markLive(payload.packets ?? 0, Date.now() - (vehicle.linkAgeMs ?? 0));
     applyFrame(vehicle);
   };
 

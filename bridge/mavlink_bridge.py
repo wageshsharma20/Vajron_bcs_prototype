@@ -23,6 +23,7 @@ install anything.
 """
 
 import argparse
+import hmac
 import json
 import os
 import sys
@@ -379,7 +380,27 @@ HTML_HINT = b"""<!doctype html><meta charset=utf-8>
 """
 
 
-def make_handler(link, rate_hz, commander):
+class QuietServer(ThreadingHTTPServer):
+    """ThreadingHTTPServer that does not shout when a browser walks away.
+
+    An SSE client that reloads or navigates leaves a half-open socket, and the
+    base handler raises out of readline() while waiting for the next request on
+    the keep-alive connection. socketserver prints a full traceback for that,
+    which on a Pi steadily fills the journal and buries the errors that matter.
+    A client disconnecting is normal traffic, not a fault.
+    """
+
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionResetError, BrokenPipeError,
+                            ConnectionAbortedError, TimeoutError)):
+            return
+        super().handle_error(request, client_address)
+
+
+def make_handler(link, rate_hz, commander, token):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
 
@@ -395,7 +416,10 @@ def make_handler(link, rate_hz, commander):
             self.send_response(204)
             self._cors()
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'content-type')
+            # Naming the custom header here also makes the preflight a real
+            # gate: a request carrying it can no longer be a 'simple' CORS
+            # request that skips OPTIONS entirely.
+            self.send_header('Access-Control-Allow-Headers', 'content-type, x-vajron-token')
             self.end_headers()
 
         def do_GET(self):
@@ -431,6 +455,14 @@ def make_handler(link, rate_hz, commander):
                     'ok': False,
                     'error': 'commanding is disabled; start the bridge with --command-link',
                 }, status=503)
+            if token is not None:
+                # compare_digest, not ==, so a wrong token cannot be recovered
+                # one character at a time from response timing.
+                supplied = self.headers.get('X-Vajron-Token', '')
+                if not hmac.compare_digest(supplied, token):
+                    print('[cmd] rejected: bad or missing token')
+                    return self._json({'ok': False, 'error': 'unauthorized'}, status=401)
+
             try:
                 n = int(self.headers.get('Content-Length') or 0)
                 body = json.loads(self.rfile.read(n) or b'{}')
@@ -489,6 +521,13 @@ def main():
     ap.add_argument('--allow-arm', action='store_true',
                     help='additionally permit ARM, DISARM and TAKEOFF. These spin '
                          'propellers; off unless you pass this.')
+    ap.add_argument('--command-token', default=None, metavar='SECRET',
+                    help='require this token on POST /command (header '
+                         'X-Vajron-Token). Telemetry stays open.')
+    ap.add_argument('--http-host', default='0.0.0.0',
+                    help='bind address for the HTTP side. 0.0.0.0 by default so '
+                         'a laptop on the field network can read the same feed; '
+                         'set 127.0.0.1 for a strictly on-device kiosk.')
     ap.add_argument('--target-system', type=int, default=1)
     ap.add_argument('--target-component', type=int, default=1)
     args = ap.parse_args()
@@ -525,9 +564,18 @@ def main():
         print(f'[bridge] commanding : {args.command_link}'
               f'{"  (arm/takeoff ENABLED)" if args.allow_arm else "  (arm/takeoff blocked)"}')
 
-    srv = ThreadingHTTPServer(('0.0.0.0', args.http_port),
-                              make_handler(link, args.rate, commander))
-    srv.daemon_threads = True
+    if commander is not None and not args.command_token:
+        # Not fatal: this bridge is routinely run against a simulator on
+        # localhost, and refusing to start would be theatre there. But the
+        # two-tier --command-link/--allow-arm gating decides which commands
+        # EXIST, not who may invoke them, so without a token anything that can
+        # reach this port can fly the aircraft.
+        print('[bridge] WARNING: commanding is enabled with no --command-token.')
+        print('[bridge]          Anything that can reach this port can command')
+        print('[bridge]          the aircraft. Set a token before real hardware.')
+
+    srv = QuietServer((args.http_host, args.http_port),
+                      make_handler(link, args.rate, commander, args.command_token))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

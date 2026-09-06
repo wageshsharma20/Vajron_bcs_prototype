@@ -87,10 +87,12 @@ export default function MissionControlScreen({ route }: any) {
     setRtlDialogVisible(false);
     const result = await runCommand('rtl');
 
-    // On a live link the aircraft is now flying home and the screen must keep
-    // showing that. Rewinding to time zero here would blank a real flight that
-    // is still in the air — the reset belongs to the canned replay alone.
-    if (useLinkStore.getState().mode === 'live') return;
+    // The rewind belongs to the canned replay alone. 'lost' still means a real
+    // aircraft, so this must not fire there either: resetTelemetry replaces the
+    // entry wholesale with the seed (altitude 0, 84%, idle, disarmed), which
+    // would destroy the frozen last-known state of an aircraft that is still in
+    // the air, under a LINK LOST banner.
+    if (useLinkStore.getState().mode !== 'demo') return;
     if (!result.ok) return;
 
     telemetryService.resetReplay(droneId);

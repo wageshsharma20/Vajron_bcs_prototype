@@ -1,4 +1,4 @@
-import { BRIDGE_URL } from '../config';
+import { BRIDGE_URL, COMMAND_TOKEN } from '../config';
 
 export type CommandName = 'takeoff' | 'rtl' | 'land' | 'hold' | 'pause' | 'resume' | 'arm' | 'disarm';
 
@@ -21,12 +21,18 @@ export async function sendVehicleCommand(
   opts: { altitude?: number } = {},
 ): Promise<CommandResult> {
   try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (COMMAND_TOKEN) headers['X-Vajron-Token'] = COMMAND_TOKEN;
+
     const response = await fetch(`${BRIDGE_URL}/command`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ command, ...opts }),
     });
     const body = (await response.json()) as CommandResult;
+    if (response.status === 401) {
+      return { ok: false, error: 'the bridge rejected this station\u2019s token' };
+    }
     if (!body.ok) {
       console.warn(`[command] ${command} refused: ${body.error ?? body.result}`);
     }

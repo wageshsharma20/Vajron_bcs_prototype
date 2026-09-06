@@ -22,7 +22,9 @@ interface LinkStore {
   lastFrameAt: number | null;
   everLive: boolean;
 
-  markLive: (packets: number) => void;
+  /** `lastFrameAt` is when the AIRCRAFT last spoke, not when this message
+   *  arrived — see mavlinkLink for why those are different. */
+  markLive: (packets: number, lastFrameAt?: number) => void;
   markTransport: (up: boolean) => void;
   markSilent: () => void;
 }
@@ -34,8 +36,8 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
   lastFrameAt: null,
   everLive: false,
 
-  markLive: packets =>
-    set({ mode: 'live', everLive: true, transportUp: true, packets, lastFrameAt: Date.now() }),
+  markLive: (packets, lastFrameAt = Date.now()) =>
+    set({ mode: 'live', everLive: true, transportUp: true, packets, lastFrameAt }),
 
   markTransport: up =>
     set(state => ({

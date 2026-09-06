@@ -111,6 +111,30 @@ A refused command comes back `ok: false` with the real `MAV_RESULT`, and the GCS
 shows it. A rejected RTL displayed as accepted is how an operator ends up
 believing a drone is coming home while it carries on.
 
+### Who may command
+
+The `--command-link` / `--allow-arm` flags decide which commands *exist*, not
+who may invoke them. The HTTP side binds `0.0.0.0` so a laptop on the field
+network can read the feed, which means without a token anything that can reach
+the port can fly the aircraft.
+
+```bash
+./start.sh --command-link udpout:127.0.0.1:14552 --allow-arm --command-token SECRET
+```
+
+The page sends it as `?token=SECRET` alongside `?bridge=`:
+
+```
+http://raspberrypi.local:8080/?bridge=http://raspberrypi.local:8082&token=SECRET
+```
+
+Telemetry stays open — reading a feed harms nothing. Only `POST /command` is
+checked, with `hmac.compare_digest`. Without `--command-token` the bridge still
+starts (it is routinely run against a simulator on localhost) but prints a
+warning. **Set a token before this goes near real hardware.**
+
+`--http-host 127.0.0.1` additionally confines it to the device.
+
 `test_commands.py` exercises the whole path against a fake autopilot that
 decodes `COMMAND_LONG` and answers `COMMAND_ACK` — encoding, targeting,
 acknowledgement and both safety gates. Only the radio is missing.

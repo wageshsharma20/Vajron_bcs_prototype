@@ -23,7 +23,27 @@ function resolveBridgeUrl(): string {
   return DEFAULT_BRIDGE;
 }
 
+/**
+ * Shared secret for commanding, if the bridge was started with one.
+ *
+ * Telemetry is deliberately open — reading a feed harms nothing — but the
+ * command endpoint flies an aircraft, and the bridge's --command-link /
+ * --allow-arm flags decide which commands exist, not who may invoke them.
+ * Supplied the same way as the bridge address:
+ *
+ *     ?bridge=http://raspberrypi.local:8082&token=...
+ */
+function resolveToken(): string | null {
+  if (typeof window === 'undefined' || !window.location) return null;
+  try {
+    return new URLSearchParams(window.location.search).get('token');
+  } catch {
+    return null;
+  }
+}
+
 export const BRIDGE_URL = resolveBridgeUrl();
+export const COMMAND_TOKEN = resolveToken();
 export const TELEMETRY_STREAM = `${BRIDGE_URL}/telemetry/stream`;
 
 /**
