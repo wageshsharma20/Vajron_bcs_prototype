@@ -28,6 +28,8 @@ cp "${HERE}/install-on-pi.sh" \
    "${HERE}/vajron-gcs.service" \
    "${HERE}/vajron-gcs-kiosk.service" \
    "${HERE}/vajron-mavlink.service" \
+   "${HERE}/vajron-router.service" \
+   "${HERE}/mavlink-router.conf" \
    "${HERE}/vajron-unlock" \
    "${HERE}/vajron-lock" \
    "${HERE}/vajron-panic" \
@@ -48,7 +50,8 @@ chmod +x "${STAGE}/vajron-gcs-pi/install-on-pi.sh" \
 # shipping without them produces a lockdown with no key.
 for required in install-on-pi.sh vajron-gcs.service vajron-gcs-kiosk.service \
                 vajron-unlock vajron-lock vajron-panic vajron-test-hotkey \
-                vajron-hotkey.conf chromium-policy.json; do
+                vajron-hotkey.conf chromium-policy.json \
+                vajron-router.service mavlink-router.conf; do
   [[ -f "${STAGE}/vajron-gcs-pi/${required}" ]] || { echo "ERROR: ${required} missing from payload" >&2; exit 1; }
 done
 

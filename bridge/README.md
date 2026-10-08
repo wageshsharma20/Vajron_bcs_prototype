@@ -5,12 +5,27 @@ UDP/serial protocol. So the page can never talk to an aircraft directly — this
 process sits in between.
 
 ```
-Pixhawk ──MAVLink──> QGroundControl ──UDP forward──> mavlink_bridge.py ──SSE──> GCS page
+On the Pi, mavlink-router owns the link to the aircraft and fans it out, so
+the DDA GCS and QGroundControl are independent peers -- either can be closed
+without affecting the other:
+
+```
+Pixhawk --UART--> mavlink-router --UDP 14551--> bridge --SSE--> GCS page
+                        ^ <--------UDP 14560--- bridge   (commands; ACKs return)
+                        +--------TCP 5760-----> QGroundControl
 ```
 
-QGroundControl keeps the vehicle. It owns the link, the parameters and the
-commanding. The bridge only listens to the copy QGC forwards and reshapes it for
-the display.
+Config: `deploy/pi/mavlink-router.conf`. Connect QGC with a **TCP** comm link to
+the Pi, port 5760. Do **not** also turn on QGC's MAVLink forwarding to the
+bridge: the router already feeds it, and forwarding would deliver every packet
+twice.
+
+The bridge sends as MAVLink system **254** (`--gcs-system`). QGC is 255. The
+router routes replies by target system, so each station gets its own ACKs --
+which only works because they no longer share an identity.
+
+Without the router (e.g. on a Mac with QGC running), QGC's forwarding to UDP
+14551 still works as before.
 
 **The bridge cannot fly the aircraft.** It never transmits — it only reads. That
 is deliberate, not unfinished: see "Commanding" below.
@@ -77,10 +92,10 @@ dangerous:
 
 ```bash
 # RTL, LAND, PAUSE/CONTINUE only
-./start.sh --command-link udpout:127.0.0.1:14550
+./start.sh --command-link udpout:127.0.0.1:14560   # behind the router
 
 # ...and additionally ARM, DISARM, TAKEOFF
-./start.sh --command-link udpout:127.0.0.1:14550 --allow-arm
+./start.sh --command-link udpout:127.0.0.1:14560 --allow-arm  # behind the router
 ```
 
 The first set brings an aircraft down or holds it still; the worst case of an
@@ -90,7 +105,8 @@ to be wired up.
 
 `--command-link` takes any pymavlink connection string: `udpout:host:port`,
 `tcp:host:port`, or a serial device like `/dev/ttyACM0`. It is a separate link
-from the telemetry input, because QGC's forwarding is one-way.
+from the telemetry input. Behind the router it is the router's command
+endpoint, `udpout:127.0.0.1:14560`.
 
 Commands are sent with **pymavlink**, not the hand-rolled encoder used for
 receiving. A `COMMAND_LONG` needs a correct per-message CRC seed; pymavlink is

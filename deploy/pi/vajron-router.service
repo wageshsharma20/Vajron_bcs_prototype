@@ -1,0 +1,16 @@
+[Unit]
+# Owns the serial link to the flight controller and fans it out to the bridge
+# and to any QGroundControl that connects on TCP 5760.
+Description=Vajron GCS MAVLink router
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=VAJRON_ROUTER_BIN -c /etc/vajron-gcs/mavlink-router.conf
+# A flight controller unplugged at boot, or reset mid-session, makes the router
+# exit on the missing device. Keep retrying so plugging it back in is enough.
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

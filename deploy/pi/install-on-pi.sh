@@ -150,6 +150,75 @@ sudo mkdir -p "$APP_DIR"
 sudo rm -rf "${APP_DIR}/dist"
 sudo cp -r "${SCRIPT_DIR}/dist" "${APP_DIR}/dist"
 
+# ----------------------------------------------------------------- router
+# mavlink-router owns the link to the flight controller and fans it out, so
+# the bridge and every QGroundControl are independent peers. Without it, QGC
+# had to sit in the middle and forward to the bridge, and closing QGC took the
+# DDA GCS down with it.
+echo "==> Installing mavlink-router"
+ROUTER_OK=1
+ROUTER_BIN="$(command -v mavlink-routerd || true)"
+if [[ -z "$ROUTER_BIN" ]]; then
+  sudo apt-get update -qq || true
+  # Packaged on some images; otherwise build the upstream source.
+  sudo apt-get install -y -qq mavlink-router 2>/dev/null || true
+  ROUTER_BIN="$(command -v mavlink-routerd || true)"
+fi
+if [[ -z "$ROUTER_BIN" ]]; then
+  echo "    not packaged here - building from source (a few minutes on a Pi 4)…"
+  sudo apt-get install -y -qq git meson ninja-build pkg-config gcc g++ || true
+  SRC="$(mktemp -d)"
+  # Pinned to a release so a rebuild next year cannot pull in a different
+  # router; falls back to the default branch only if that tag is unreachable.
+  if git clone -q --depth 1 --branch v4 --recurse-submodules --shallow-submodules \
+       https://github.com/mavlink-router/mavlink-router.git "$SRC/mr" 2>/dev/null \
+     || git clone -q --depth 1 --recurse-submodules --shallow-submodules \
+       https://github.com/mavlink-router/mavlink-router.git "$SRC/mr"; then
+    ( cd "$SRC/mr" && meson setup build . --buildtype=release > /dev/null \
+      && ninja -C build > /dev/null && sudo ninja -C build install > /dev/null ) || true
+  fi
+  rm -rf "$SRC"
+  ROUTER_BIN="$(command -v mavlink-routerd || ls /usr/local/bin/mavlink-routerd 2>/dev/null || true)"
+fi
+
+if [[ -z "$ROUTER_BIN" ]]; then
+  ROUTER_OK=0
+  echo "    WARNING: mavlink-router could not be installed (no internet?)." >&2
+  echo "    The bridge still listens on UDP 14551: point QGC's MAVLink forwarding" >&2
+  echo "    at this Pi to use the old QGC-in-the-middle setup." >&2
+else
+  echo "    router: ${ROUTER_BIN}"
+  # The upstream build installs its own unit reading /etc/mavlink-router; a
+  # second router fighting ours for the serial port would drop packets.
+  sudo systemctl disable --now mavlink-router.service > /dev/null 2>&1 || true
+
+  # Which device is the flight controller? /dev/serial/by-id names survive
+  # reboots and replugging, where ttyACM0/ttyACM1 can swap. Override with
+  # VAJRON_FC_DEVICE=... and VAJRON_FC_BAUD=... when running this script.
+  FC_DEVICE="${VAJRON_FC_DEVICE:-}"
+  if [[ -z "$FC_DEVICE" ]]; then
+    FC_DEVICE="$(ls /dev/serial/by-id/* 2>/dev/null | head -1 || true)"
+  fi
+  if [[ -z "$FC_DEVICE" ]]; then
+    FC_DEVICE=/dev/ttyACM0
+    echo "    no flight controller plugged in - assuming ${FC_DEVICE}"
+    echo "    (USB Pixhawk). Re-run with VAJRON_FC_DEVICE=... if it is wired differently."
+  fi
+  # 57600 is the SiK telemetry-radio standard; a USB Pixhawk ignores baud.
+  # A Pixhawk wired to the Pi's GPIO UART on TELEM2 usually wants 921600.
+  FC_BAUD="${VAJRON_FC_BAUD:-57600}"
+  echo "    flight controller: ${FC_DEVICE} @ ${FC_BAUD}"
+
+  sudo mkdir -p "$CONF_DIR"
+  sed -e "s|VAJRON_FC_DEVICE|${FC_DEVICE}|" -e "s|VAJRON_FC_BAUD|${FC_BAUD}|" \
+    "${SCRIPT_DIR}/mavlink-router.conf" | sudo tee "${CONF_DIR}/mavlink-router.conf" > /dev/null
+  sed "s|VAJRON_ROUTER_BIN|${ROUTER_BIN}|" "${SCRIPT_DIR}/vajron-router.service" \
+    | sudo tee /etc/systemd/system/vajron-router.service > /dev/null
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now vajron-router.service
+  echo "    QGroundControl: add a TCP comm link to this Pi, port 5760"
+fi
+
 echo "==> Installing the MAVLink bridge (UDP 14551 -> HTTP 8082)"
 if [[ -d "${SCRIPT_DIR}/bridge" ]]; then
   sudo rm -rf "${APP_DIR}/bridge"
@@ -171,6 +240,28 @@ if [[ -d "${SCRIPT_DIR}/bridge" ]]; then
   fi
 else
   echo "    WARNING: no bridge/ in the payload; the GCS will stay in demo mode" >&2
+fi
+
+# Prove the chain, rather than assume it: aircraft -> router -> bridge.
+if (( ROUTER_OK )) && systemctl is-active --quiet vajron-mavlink.service; then
+  echo "==> Checking the aircraft link (up to 20s)"
+  LINK_SEEN=0
+  for _ in $(seq 1 20); do
+    if curl -fsS http://localhost:8082/health 2>/dev/null | grep -q '"connected": true'; then
+      LINK_SEEN=1; break
+    fi
+    sleep 1
+  done
+  if (( LINK_SEEN )); then
+    echo "    aircraft heartbeat received through the router - link OK"
+  elif systemctl is-active --quiet vajron-router.service; then
+    echo "    router running, but no aircraft heard yet. Normal if the flight"
+    echo "    controller is off or unplugged; check later with:"
+    echo "        curl localhost:8082/health"
+  else
+    echo "    WARNING: the router is not running - most likely the device path"
+    echo "    is wrong. See: sudo journalctl -u vajron-router -n 30" >&2
+  fi
 fi
 
 echo "==> Installing the file server (port ${PORT})"

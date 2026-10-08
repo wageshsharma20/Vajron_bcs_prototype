@@ -3,7 +3,8 @@
 # The GCS page has no way to open a UDP socket, so without this it can only
 # ever show its canned demo replay.
 Description=Vajron GCS MAVLink bridge
-After=network.target
+After=network.target vajron-router.service
+Wants=vajron-router.service
 
 [Service]
 Type=simple
@@ -16,7 +17,8 @@ Environment=PYTHONUNBUFFERED=1
 # 14551, not 14550: QGroundControl binds 14550 to listen for vehicles. If QGC
 # ever runs on this same Pi, a bridge on 14550 would fail to start.
 # Receive-only as shipped. To let the GCS command the aircraft, append
-#   --command-link udpout:<vehicle-host>:14550
+#   --command-link udpout:127.0.0.1:14560 --command-token <secret>
+# (14560 is the router's command endpoint -- see mavlink-router.conf)
 # and, only if you want ARM/TAKEOFF from the GCS as well, --allow-arm.
 # Needs pymavlink:  sudo pip3 install pymavlink
 ExecStart=/usr/bin/python3 /opt/vajron-gcs/bridge/mavlink_bridge.py \
