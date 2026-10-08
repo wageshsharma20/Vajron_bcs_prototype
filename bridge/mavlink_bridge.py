@@ -69,6 +69,9 @@ HEARTBEAT, SYS_STATUS, GPS_RAW_INT = 0, 1, 24
 GLOBAL_POSITION_INT, VFR_HUD, RADIO_STATUS = 33, 74, 109
 
 MAV_MODE_FLAG_SAFETY_ARMED = 0x80
+MAV_COMP_ID_AUTOPILOT1 = 1
+MAV_TYPE_GCS = 6
+MAV_AUTOPILOT_INVALID = 8
 AUTOPILOT_ARDUPILOT, AUTOPILOT_PX4 = 3, 12
 
 # Our display only has these eight states, so every autopilot mode is folded
@@ -184,8 +187,9 @@ def _haversine(a, b):
 class Link:
     """Reads MAVLink frames off a UDP socket and keeps per-vehicle state."""
 
-    def __init__(self, host, port, drone_id):
+    def __init__(self, host, port, drone_id, target_system=1):
         self.drone_id = drone_id
+        self.target_system = target_system
         self.vehicles = {}
         self.lock = threading.Lock()
         self.packets = 0
@@ -225,24 +229,48 @@ class Link:
                 continue
             if end > n:
                 break
-            self._dispatch(sysid, msgid, buf[start:end])
+            self._dispatch(sysid, compid, msgid, buf[start:end])
             i += total
 
-    def _dispatch(self, sysid, msgid, payload):
-        # Ground stations and companion computers share the bus; only vehicles
-        # are of interest, and sysid 255 is conventionally the GCS itself.
-        if sysid == 255:
-            return
+    def _dispatch(self, sysid, compid, msgid, payload):
+        """Route one frame to the aircraft it describes.
+
+        A MAVLink bus carries far more than the flight controller. A gimbal,
+        camera or companion computer shares the autopilot's SYSTEM id and sends
+        its own HEARTBEAT -- disarmed, with autopilot type INVALID -- so keying
+        on sysid alone made the display flicker between the real state and
+        DISARMED/IDLE every second. Telemetry radios send RADIO_STATUS from
+        their own sysid, which used to mint an all-zero phantom vehicle that
+        could be published as live telemetry.
+
+        Rules: a vehicle exists only once its AUTOPILOT component (compid 1)
+        has sent a real heartbeat; everything else about it must also come
+        from compid 1; RADIO_STATUS is link metadata applied to the vehicle.
+        """
         with self.lock:
-            v = self.vehicles.get(sysid)
-            if v is None:
-                v = self.vehicles[sysid] = Vehicle(sysid)
-                print(f'[link] vehicle {sysid} appeared')
-            v.last_seen = time.time()
             self.packets += 1
             try:
+                if msgid == RADIO_STATUS:
+                    for v in self.vehicles.values():
+                        v.radio_status(payload)
+                    return
+
+                if compid != MAV_COMP_ID_AUTOPILOT1:
+                    return
+
+                v = self.vehicles.get(sysid)
                 if msgid == HEARTBEAT:
+                    _custom, mav_type, autopilot = _unpack('<IBB', payload)
+                    # Ground stations (QGC, this bridge) and anything without a
+                    # real autopilot are not aircraft.
+                    if mav_type == MAV_TYPE_GCS or autopilot == MAV_AUTOPILOT_INVALID:
+                        return
+                    if v is None:
+                        v = self.vehicles[sysid] = Vehicle(sysid)
+                        print(f'[link] vehicle {sysid} appeared')
                     v.heartbeat(payload)
+                elif v is None:
+                    return  # nothing is published for a sender that never heartbeat
                 elif msgid == SYS_STATUS:
                     v.sys_status(payload)
                 elif msgid == GPS_RAW_INT:
@@ -251,8 +279,7 @@ class Link:
                     v.global_position(payload)
                 elif msgid == VFR_HUD:
                     v.vfr_hud(payload)
-                elif msgid == RADIO_STATUS:
-                    v.radio_status(payload)
+                v.last_seen = time.time()
             except (struct.error, IndexError):
                 # A malformed frame must never take the bridge down mid-flight.
                 pass
@@ -263,7 +290,10 @@ class Link:
             live = [v for v in self.vehicles.values() if now - v.last_seen < 5.0]
             if not live:
                 return {'connected': False, 'vehicles': [], 'packets': self.packets}
-            primary = min(live, key=lambda v: v.sysid)
+            # The configured aircraft if it is live; the lowest sysid only as a
+            # fallback, so a second vehicle appearing cannot swap identities.
+            primary = next((v for v in live if v.sysid == self.target_system),
+                           min(live, key=lambda v: v.sysid))
             return {
                 'connected': True,
                 'packets': self.packets,
@@ -299,14 +329,23 @@ class Commander:
         'takeoff':  ('MAV_CMD_NAV_TAKEOFF',          ()),   # altitude filled in
     }
 
-    def __init__(self, connstr, allow_arm, target_system=1, target_component=1):
+    def __init__(self, connstr, allow_arm, target_system=1, target_component=1,
+                 gcs_system=254):
         self.connstr = connstr
         self.allow_arm = allow_arm
         self.target = (target_system, target_component)
         self.lock = threading.Lock()
+        # Held across a whole send-and-wait. PAUSE and RESUME are both
+        # MAV_CMD_DO_PAUSE_CONTINUE, ARM and DISARM both ARM_DISARM, so an ACK
+        # names only the command id. With one command in flight at a time an
+        # ACK can only belong to the request that is waiting for it.
+        self.send_lock = threading.Lock()
         self.acks = {}
+        # NOT 255/190. That is QGroundControl's own identity, and two ground
+        # stations with one identity on one link get each other's
+        # acknowledgements and mission traffic.
         self.conn = mavutil.mavlink_connection(
-            connstr, source_system=255, source_component=190)
+            connstr, source_system=gcs_system, source_component=190)
         threading.Thread(target=self._read_acks, daemon=True).start()
 
     def _read_acks(self):
@@ -316,9 +355,10 @@ class Commander:
             except Exception:
                 time.sleep(0.5)
                 continue
-            if msg is not None:
+            # Only the aircraft we command may answer for it.
+            if msg is not None and msg.get_srcSystem() == self.target[0]:
                 with self.lock:
-                    self.acks[msg.command] = (msg.result, time.time())
+                    self.acks[msg.command] = (msg.result, time.monotonic())
 
     def available(self, name):
         if name in self.SAFE:
@@ -341,19 +381,23 @@ class Commander:
         if name == 'takeoff':
             args[6] = float(altitude if altitude is not None else 15.0)  # param7 = alt
 
-        with self.lock:
-            self.acks.pop(cmd_id, None)
+        with self.send_lock:
+            return self._send_and_wait(name, cmd_name, cmd_id, args)
+
+    def _send_and_wait(self, name, cmd_name, cmd_id, args):
+        t_send = time.monotonic()
         self.conn.mav.command_long_send(self.target[0], self.target[1],
                                         cmd_id, 0, *args)
 
         # Report what the aircraft actually said. Assuming success is how a
         # rejected command becomes a UI that claims the drone is returning home
-        # when it is still sitting on the pad.
-        deadline = time.time() + 2.5
-        while time.time() < deadline:
+        # when it is still sitting on the pad. Only an ACK newer than this send
+        # counts: a stale one left by an earlier command is not an answer.
+        deadline = t_send + 2.5
+        while time.monotonic() < deadline:
             with self.lock:
                 hit = self.acks.get(cmd_id)
-            if hit:
+            if hit and hit[1] >= t_send:
                 result, _ = hit
                 accepted = result == mavutil.mavlink.MAV_RESULT_ACCEPTED
                 label = mavutil.mavlink.enums['MAV_RESULT'][result].name \
@@ -469,6 +513,11 @@ def make_handler(link, rate_hz, commander, token):
             except (ValueError, json.JSONDecodeError):
                 return self._json({'ok': False, 'error': 'malformed request'}, status=400)
 
+            want = body.get('droneId')
+            if want and want != link.drone_id:
+                return self._json({'ok': False, 'error': f'this bridge commands {link.drone_id}, not {want}'},
+                                  status=409)
+
             name = str(body.get('command', '')).lower()
             alt = body.get('altitude')
             result = commander.send(name, alt)
@@ -529,6 +578,9 @@ def main():
                          'a laptop on the field network can read the same feed; '
                          'set 127.0.0.1 for a strictly on-device kiosk.')
     ap.add_argument('--target-system', type=int, default=1)
+    ap.add_argument('--gcs-system', type=int, default=254,
+                    help='MAVLink system id this bridge sends as. Must differ '
+                         'from QGroundControl (255) when both are connected.')
     ap.add_argument('--target-component', type=int, default=1)
     args = ap.parse_args()
 
@@ -548,9 +600,10 @@ def main():
             print('[bridge]        pip install pymavlink')
             raise SystemExit(2)
         commander = Commander(args.command_link, args.allow_arm,
-                              args.target_system, args.target_component)
+                              args.target_system, args.target_component,
+                              args.gcs_system)
 
-    link = Link(args.udp_host, args.udp_port, args.drone_id)
+    link = Link(args.udp_host, args.udp_port, args.drone_id, args.target_system)
     threading.Thread(target=link.run, daemon=True).start()
 
     print(f'[bridge] MAVLink in : udp://{args.udp_host}:{args.udp_port}')

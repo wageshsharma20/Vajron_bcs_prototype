@@ -79,7 +79,12 @@ fi
 # tty1 while doing it — the exact trap this script exists to prevent. Check it
 # once here, while reacting is still cheap.
 CAGE_VT_OK=1
-if command -v cage > /dev/null && ! cage -h 2>&1 | grep -qE "^[[:space:]]*-s([[:space:]]|,|$)"; then
+# Capture the help text first, then grep it. `cage -h` exits non-zero after
+# printing usage, and under `set -o pipefail` a pipeline takes the failing
+# status of cage even when grep matched -- so the old one-line check ALWAYS
+# concluded "no -s", and every install shipped with Ctrl+Alt+F2 disabled.
+CAGE_HELP="$(cage -h 2>&1 || true)"
+if command -v cage > /dev/null && ! printf '%s\n' "$CAGE_HELP" | grep -qE "^[[:space:]]*-s([[:space:]]|,|$)"; then
   CAGE_VT_OK=0
   echo "    WARNING: this cage build does not advertise -s (VT switching)." >&2
   echo "    Ctrl+Alt+F2 will NOT get you a console on this build." >&2

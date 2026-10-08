@@ -84,7 +84,7 @@ export function startMavlinkLink() {
     // bridge was alive — it caught a dead transport but never a silent
     // aircraft, which is the case it exists for. `?? 0` keeps the old
     // behaviour against a bridge that does not send the field.
-    store.markLive(payload.packets ?? 0, Date.now() - (vehicle.linkAgeMs ?? 0));
+    store.markLive(payload.packets ?? 0, Date.now() - (vehicle.linkAgeMs ?? 0), vehicle.droneId);
     applyFrame(vehicle);
   };
 

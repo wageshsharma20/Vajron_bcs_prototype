@@ -71,7 +71,27 @@ export default function MissionControlScreen({ route }: any) {
     return result;
   };
 
+  // The aircraft is the authority on whether there is anything to resume. The
+  // pause flag is local, and nothing else used to clear it on a live link: after
+  // PAUSE then RTL the button still read RESUME, and pressing it sent
+  // DO_PAUSE_CONTINUE(continue) -- which on ArduPilot resumes the survey and
+  // abandons the return home. Clear it the moment the aircraft is returning,
+  // landing or on the ground.
+  const flightMode = telemetry?.flightMode;
+  useEffect(() => {
+    if (!isArmed || flightMode === 'rtl' || flightMode === 'land' || flightMode === 'idle') {
+      setIsPaused(false);
+    }
+  }, [isArmed, flightMode]);
+
   const handlePauseToggle = async () => {
+    // Belt and braces with the effect above: never send CONTINUE to an
+    // aircraft that is coming home, even if a render has not caught up yet.
+    if (isPaused && (flightMode === 'rtl' || flightMode === 'land')) {
+      setIsPaused(false);
+      setNotice('Not resuming: the aircraft is returning home.');
+      return;
+    }
     const next = !isPaused;
     const result = await runCommand(isPaused ? 'resume' : 'hold');
     // Only move the button if the aircraft agreed, or there is no aircraft.
@@ -92,8 +112,10 @@ export default function MissionControlScreen({ route }: any) {
     // entry wholesale with the seed (altitude 0, 84%, idle, disarmed), which
     // would destroy the frozen last-known state of an aircraft that is still in
     // the air, under a LINK LOST banner.
-    if (useLinkStore.getState().mode !== 'demo') return;
     if (!result.ok) return;
+    // Whatever was paused is superseded by the return home -- on any link.
+    setIsPaused(false);
+    if (useLinkStore.getState().mode !== 'demo') return;
 
     telemetryService.resetReplay(droneId);
     useTelemetryStore.getState().resetTelemetry(droneId);
@@ -159,6 +181,7 @@ export default function MissionControlScreen({ route }: any) {
   return (
     <Page
       title={droneId}
+      droneId={droneId}
       subtitle={
         <Text style={[styles.droneStatus, { color: headerColors.muted }]}>
           {telemetry?.flightMode?.toUpperCase() || 'UNKNOWN'} · {telemetry?.gpsFixType?.toUpperCase() || 'NO'} FIX

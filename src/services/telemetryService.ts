@@ -42,10 +42,19 @@ class TelemetryService {
     console.log(`[Command -> ${droneId}] ${command}${real ? ' (live)' : ' (demo)'}`, payload);
 
     if (real) {
+      // One bridge, one aircraft. A command from another drone's screen must
+      // not travel down this link: it would fly the connected aircraft, not
+      // the one the operator is looking at. And it must not fall through to
+      // the demo branch either, which would report a success that never
+      // happened. Refuse it plainly.
+      const linked = useLinkStore.getState().liveDroneId;
+      if (linked && linked !== droneId) {
+        return { ok: false, error: `No link to ${droneId}. This station is connected to ${linked}.` };
+      }
       // Attempted even while the link is lost. An unreachable bridge or a
       // refusing autopilot both come back as an honest failure the operator
       // can see, which beats inventing a success.
-      return sendVehicleCommand(command as CommandName, payload ?? {});
+      return sendVehicleCommand(droneId, command as CommandName, payload ?? {});
     }
 
     if (command === 'takeoff') {

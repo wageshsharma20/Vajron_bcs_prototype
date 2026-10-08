@@ -2,6 +2,19 @@
 """Feeds the bridge synthetic MAVLink v2 frames and checks what comes out."""
 import json, socket, struct, subprocess, sys, time, urllib.request
 
+def _wait_ready(port, limit=20.0):
+    """Poll until the bridge answers, instead of guessing with a fixed sleep:
+    a cold start (iCloud-synced files, a slow Pi SD card) can take seconds."""
+    import time as _t, urllib.request as _u
+    end = _t.time() + limit
+    while _t.time() < end:
+        try:
+            _u.urlopen(f'http://127.0.0.1:{port}/health', timeout=1); return
+        except Exception:
+            _t.sleep(0.1)
+    raise SystemExit(f'bridge on :{port} never became ready')
+
+
 UDP, HTTP = 14599, 8099
 
 def v2(msgid, payload, sysid=1, seq=0):
@@ -12,7 +25,7 @@ def v2(msgid, payload, sysid=1, seq=0):
 proc = subprocess.Popen(
     [sys.executable, 'mavlink_bridge.py', '--udp-port', str(UDP), '--http-port', str(HTTP)],
     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-time.sleep(1.5)
+_wait_ready(HTTP)
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 send = lambda pkt: s.sendto(pkt, ('127.0.0.1', UDP))

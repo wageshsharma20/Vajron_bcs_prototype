@@ -17,6 +17,7 @@ export interface CommandResult {
  * operator ends up believing a drone is coming home while it carries on.
  */
 export async function sendVehicleCommand(
+  droneId: string,
   command: CommandName,
   opts: { altitude?: number } = {},
 ): Promise<CommandResult> {
@@ -27,7 +28,9 @@ export async function sendVehicleCommand(
     const response = await fetch(`${BRIDGE_URL}/command`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ command, ...opts }),
+      // The bridge checks this against the aircraft it is bound to, so the
+      // identity is enforced at both ends, not just in this page.
+      body: JSON.stringify({ droneId, command, ...opts }),
     });
     const body = (await response.json()) as CommandResult;
     if (response.status === 401) {

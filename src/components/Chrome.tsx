@@ -57,9 +57,14 @@ export function useHeaderColors() {
  * at — the failure this prevents is an operator reading a smooth canned replay
  * as a live aircraft.
  */
-export function LinkBadge() {
+export function LinkBadge({ droneId }: { droneId?: string } = {}) {
   const { theme, sp } = useTheme();
   const mode = useLinkStore(state => state.mode);
+  const liveDroneId = useLinkStore(state => state.liveDroneId);
+  // A live link to DRONE-01 says nothing about DRONE-02. Claiming LIVE on
+  // another aircraft's screen would put real-looking authority on numbers
+  // that are only its static catalogue entry.
+  const otherAircraft = mode !== 'demo' && !!droneId && !!liveDroneId && droneId !== liveDroneId;
 
   const look: Record<LinkMode, { label: string; fg: string; bg: string }> = {
     live: { label: 'LIVE TELEMETRY', fg: theme.onBrand, bg: 'transparent' },
@@ -68,7 +73,9 @@ export function LinkBadge() {
     // for dark text on a white page — would sink into the background.
     demo: { label: 'DEMO DATA', fg: STATUS_RAMPS.amber[0], bg: 'transparent' },
   };
-  const { label, fg, bg } = look[mode];
+  const { label, fg, bg } = otherAircraft
+    ? { label: 'NOT CONNECTED', fg: STATUS_RAMPS.amber[0], bg: 'transparent' }
+    : look[mode];
 
   return (
     <View
@@ -151,8 +158,11 @@ export function PageHeader({
   meta,
   subtitle,
   foot,
+  droneId,
 }: {
   title: string;
+  /** The aircraft this screen is about, so the link badge can be specific. */
+  droneId?: string;
   meta?: string;
   subtitle?: React.ReactNode;
   /** Chrome anchored to the bottom of the spine, below the meta. */
@@ -221,7 +231,7 @@ export function PageHeader({
       </View>
 
       <View>
-        <LinkBadge />
+        <LinkBadge droneId={droneId} />
         {meta ? (
           <Text style={[styles.spineMeta, { color: theme.onBrandMuted }]}>{meta}</Text>
         ) : null}
@@ -242,8 +252,10 @@ export function Page({
   subtitle,
   spineFoot,
   children,
+  droneId,
 }: {
   title: string;
+  droneId?: string;
   meta?: string;
   subtitle?: React.ReactNode;
   /** Chrome for the foot of the spine — never mission data. */
@@ -254,7 +266,7 @@ export function Page({
 
   return (
     <View style={[styles.page, { backgroundColor: theme.background }]}>
-      <PageHeader title={title} meta={meta} subtitle={subtitle} foot={spineFoot} />
+      <PageHeader title={title} meta={meta} subtitle={subtitle} foot={spineFoot} droneId={droneId} />
       <View style={styles.body}>{children}</View>
     </View>
   );

@@ -21,10 +21,13 @@ interface LinkStore {
   packets: number;
   lastFrameAt: number | null;
   everLive: boolean;
+  /** Which aircraft the live stream describes. One bridge feeds ONE aircraft;
+   *  every other drone in the fleet list has no link at all. */
+  liveDroneId: string | null;
 
   /** `lastFrameAt` is when the AIRCRAFT last spoke, not when this message
    *  arrived — see mavlinkLink for why those are different. */
-  markLive: (packets: number, lastFrameAt?: number) => void;
+  markLive: (packets: number, lastFrameAt?: number, droneId?: string) => void;
   markTransport: (up: boolean) => void;
   markSilent: () => void;
 }
@@ -35,9 +38,13 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
   packets: 0,
   lastFrameAt: null,
   everLive: false,
+  liveDroneId: null,
 
-  markLive: (packets, lastFrameAt = Date.now()) =>
-    set({ mode: 'live', everLive: true, transportUp: true, packets, lastFrameAt }),
+  markLive: (packets, lastFrameAt = Date.now(), droneId) =>
+    set(state => ({
+      mode: 'live', everLive: true, transportUp: true, packets, lastFrameAt,
+      liveDroneId: droneId ?? state.liveDroneId,
+    })),
 
   markTransport: up =>
     set(state => ({

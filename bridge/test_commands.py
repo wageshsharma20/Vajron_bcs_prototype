@@ -12,6 +12,19 @@ if _os.path.isdir(_v) and _v not in _sys.path:
     _sys.path.insert(0, _v)   # find a local pymavlink without PYTHONPATH
 from pymavlink.dialects.v20 import ardupilotmega as mavlink
 
+def _wait_ready(port, limit=20.0):
+    """Poll until the bridge answers, instead of guessing with a fixed sleep:
+    a cold start (iCloud-synced files, a slow Pi SD card) can take seconds."""
+    import time as _t, urllib.request as _u
+    end = _t.time() + limit
+    while _t.time() < end:
+        try:
+            _u.urlopen(f'http://127.0.0.1:{port}/health', timeout=1); return
+        except Exception:
+            _t.sleep(0.1)
+    raise SystemExit(f'bridge on :{port} never became ready')
+
+
 PY, VPORT, HTTP, UDP = sys.executable, 14780, 8087, 14781
 received = []
 
@@ -61,7 +74,7 @@ def run(allow_arm):
     if allow_arm:
         cmd.append('--allow-arm')
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    time.sleep(2.5)
+    _wait_ready(HTTP)
     try:
         return {
             'rtl':     post('rtl'),
