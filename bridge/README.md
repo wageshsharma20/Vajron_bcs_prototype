@@ -165,3 +165,63 @@ a real aircraft, fly it in SITL first, then bench-test with props removed.
 `jetsonCpuTemp`, `jetsonGpuTemp` and `inferenceFps` come from the companion
 computer, not the flight controller. The bridge leaves them alone rather than
 inventing values.
+
+
+## MAVLink signing
+
+Signing **authenticates** packets -- a 6-byte SHA-256 tag made with a key both
+ends share -- so nobody without the key can inject a command or forge
+telemetry, and recorded packets cannot be replayed. It does **not** encrypt:
+anyone listening can still read the telemetry. Confidentiality comes from the
+radio or a tunnel, not from this.
+
+The key file holds either 64 hex characters (the raw key) or a passphrase, in
+which case the key is its SHA-256. Mission Planner derives keys the same way.
+**Do not assume QGroundControl does** -- if QGC stops being able to command the
+aircraft after you enable signing, its key differs; the provisioning tool's
+report below is the source of truth.
+
+### 1. The bridge
+
+```bash
+./start.sh --signing-key-file /etc/vajron-gcs/mavlink-signing.key ...
+```
+
+Commands go out signed. Incoming telemetry is verified: a **forged** or
+**replayed** frame is always dropped; an **unsigned** one is accepted and
+counted, until you add `--require-signed`. `/health` shows the counts.
+
+Commands are MAVLink 2. pymavlink defaults to MAVLink 1 unless `MAVLINK20` is
+set before import, and MAVLink 1 cannot be signed -- `setup_signing()` then
+succeeds silently and nothing is signed. The bridge sets it.
+
+### 2. The aircraft -- once, over USB, PROPELLERS OFF
+
+```bash
+python3 provision_signing.py --device /dev/ttyACM0 --key-file /etc/vajron-gcs/mavlink-signing.key
+```
+
+On the Pi, mavlink-router holds the serial port; stop it first
+(`sudo systemctl stop vajron-router`) and start it again afterwards.
+
+The tool installs the key with `SETUP_SIGNING` and then **proves** it rather
+than assuming:
+
+- a correctly signed command is obeyed, **and an unsigned one is refused** --
+  the second check is the real one, since an aircraft with no key obeys signed
+  commands too;
+- whether the aircraft now signs its own telemetry.
+
+### 3. `--require-signed` -- only if step 2 said the aircraft signs telemetry
+
+Otherwise every frame is dropped and the display goes blank. Some autopilots
+need a parameter to sign or enforce at all (PX4: `MAV_SIGN_CFG`).
+
+`--disable` on the provisioning tool sends the all-zero key the signing spec
+uses to turn signing off. **Keep the passphrase**: an aircraft enforcing
+signing ignores every ground station without it.
+
+`test_signing.py` covers forged, unsigned and replayed frames and signed
+commands against an aircraft that enforces signing; `test_provision.py` covers
+an aircraft that signs everything, one that signs only commands, and one that
+ignores the key.

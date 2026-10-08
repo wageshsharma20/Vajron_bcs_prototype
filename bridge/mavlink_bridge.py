@@ -23,8 +23,10 @@ install anything.
 """
 
 import argparse
+import hashlib
 import hmac
 import json
+import re
 import os
 import sys
 import math
@@ -45,6 +47,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 _vendor = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vendor')
 if os.path.isdir(_vendor) and _vendor not in sys.path:
     sys.path.insert(0, _vendor)
+
+# MAVLink 2, explicitly. pymavlink defaults to MAVLink 1 unless MAVLINK20 is set
+# BEFORE it is imported, and MAVLink 1 has no signing: setup_signing() then
+# succeeds silently and every command still leaves unsigned. Commands were in
+# fact going out as MAVLink 1 until this line existed.
+os.environ.setdefault('MAVLINK20', '1')
 
 try:
     from pymavlink import mavutil
@@ -97,6 +105,49 @@ def _unpack(fmt, payload):
     if len(payload) < need:
         payload = payload + b'\x00' * (need - len(payload))
     return struct.unpack(fmt, payload[:need])
+
+
+def load_signing_key(path):
+    """Read a MAVLink signing key from a file.
+
+    64 hex characters are taken as the raw 32-byte key. Anything else is a
+    passphrase and the key is its SHA-256 -- the derivation Mission Planner uses,
+    so one passphrase can be typed into a ground station and saved here.
+    """
+    text = open(path).read().strip()
+    if not text:
+        raise SystemExit(f'[bridge] signing key file {path} is empty')
+    if re.fullmatch(r'[0-9a-fA-F]{64}', text):
+        return bytes.fromhex(text)
+    return hashlib.sha256(text.encode()).digest()
+
+
+class SignatureCheck:
+    """Verifies MAVLink 2 signatures on incoming frames. Standard library only.
+
+    signature = SHA-256(key + frame-from-STX-through-CRC + link_id + timestamp)[:6]
+
+    Replays are refused: each (system, component, link) stream must carry a
+    strictly increasing timestamp, so a recorded "armed, 40 m, heading home"
+    cannot be played back later to make the screen lie.
+    """
+
+    def __init__(self, key):
+        self.key = key
+        self.last = {}
+
+    def check(self, frame, sysid, compid):
+        """Return 'valid' or 'invalid' for a signed v2 frame."""
+        body, link_id = frame[:-13], frame[-13]
+        ts = int.from_bytes(frame[-12:-6], 'little')
+        expected = hashlib.sha256(self.key + body + frame[-13:-6]).digest()[:6]
+        if not hmac.compare_digest(expected, frame[-6:]):
+            return 'invalid'
+        stream = (sysid, compid, link_id)
+        if ts <= self.last.get(stream, -1):
+            return 'invalid'          # replayed or reordered
+        self.last[stream] = ts
+        return 'valid'
 
 
 class Vehicle:
@@ -187,9 +238,13 @@ def _haversine(a, b):
 class Link:
     """Reads MAVLink frames off a UDP socket and keeps per-vehicle state."""
 
-    def __init__(self, host, port, drone_id, target_system=1):
+    def __init__(self, host, port, drone_id, target_system=1, signing_key=None,
+                 require_signed=False):
         self.drone_id = drone_id
         self.target_system = target_system
+        self.sig = SignatureCheck(signing_key) if signing_key else None
+        self.require_signed = require_signed
+        self.sig_counts = {'valid': 0, 'unsigned': 0, 'rejected': 0}
         self.vehicles = {}
         self.lock = threading.Lock()
         self.packets = 0
@@ -227,12 +282,17 @@ class Link:
             else:
                 i += 1
                 continue
-            if end > n:
+            if end > n or i + total > n:
                 break
-            self._dispatch(sysid, compid, msgid, buf[start:end])
+            if magic == MAGIC_V2 and incompat & 0x01:
+                signed = (self.sig.check(buf[i:i + total], sysid, compid)
+                          if self.sig else 'unchecked')
+            else:
+                signed = 'unsigned'
+            self._dispatch(sysid, compid, msgid, buf[start:end], signed)
             i += total
 
-    def _dispatch(self, sysid, compid, msgid, payload):
+    def _dispatch(self, sysid, compid, msgid, payload, signed='unsigned'):
         """Route one frame to the aircraft it describes.
 
         A MAVLink bus carries far more than the flight controller. A gimbal,
@@ -249,6 +309,21 @@ class Link:
         """
         with self.lock:
             self.packets += 1
+            if self.sig is not None:
+                # A bad signature is never legitimate, so it is dropped whether
+                # or not signing is required. RADIO_STATUS is exempt from the
+                # requirement: it is injected by the telemetry radio, which has
+                # no key and cannot sign.
+                if signed == 'invalid':
+                    self.sig_counts['rejected'] += 1
+                    return
+                if signed == 'unsigned' and msgid != RADIO_STATUS:
+                    if self.require_signed:
+                        self.sig_counts['rejected'] += 1
+                        return
+                    self.sig_counts['unsigned'] += 1
+                elif signed == 'valid':
+                    self.sig_counts['valid'] += 1
             try:
                 if msgid == RADIO_STATUS:
                     for v in self.vehicles.values():
@@ -330,7 +405,7 @@ class Commander:
     }
 
     def __init__(self, connstr, allow_arm, target_system=1, target_component=1,
-                 gcs_system=254):
+                 gcs_system=254, signing_key=None, require_signed=False):
         self.connstr = connstr
         self.allow_arm = allow_arm
         self.target = (target_system, target_component)
@@ -346,6 +421,13 @@ class Commander:
         # acknowledgements and mission traffic.
         self.conn = mavutil.mavlink_connection(
             connstr, source_system=gcs_system, source_component=190)
+        if signing_key:
+            # pymavlink computes the signature; nothing here hand-rolls it.
+            # Unsigned replies (ACKs from an aircraft that does not sign) are
+            # accepted unless signing is required end to end.
+            self.conn.setup_signing(
+                signing_key, sign_outgoing=True,
+                allow_unsigned_callback=lambda _mav, _msgid: not require_signed)
         threading.Thread(target=self._read_acks, daemon=True).start()
 
     def _read_acks(self):
@@ -478,6 +560,11 @@ def make_handler(link, rate_hz, commander, token):
                     'connected': s['connected'],
                     'packets': s['packets'],
                     'commanding': commander is not None,
+                    # Lets an operator see whether the aircraft actually signs
+                    # its telemetry BEFORE turning on --require-signed, which
+                    # would otherwise blank the screen on an aircraft that does not.
+                    'signing': None if link.sig is None else {
+                        'required': link.require_signed, **link.sig_counts},
                     'armingAllowed': bool(commander and commander.allow_arm),
                 })
             body = HTML_HINT
@@ -577,12 +664,21 @@ def main():
                     help='bind address for the HTTP side. 0.0.0.0 by default so '
                          'a laptop on the field network can read the same feed; '
                          'set 127.0.0.1 for a strictly on-device kiosk.')
+    ap.add_argument('--signing-key-file', default=None, metavar='PATH',
+                    help='MAVLink 2 signing key: 64 hex chars, or a passphrase '
+                         '(key = SHA-256 of it). Signs commands, verifies telemetry.')
+    ap.add_argument('--require-signed', action='store_true',
+                    help='drop unsigned telemetry. Check /health first: if the '
+                         'aircraft does not sign, this blanks the display.')
     ap.add_argument('--target-system', type=int, default=1)
     ap.add_argument('--gcs-system', type=int, default=254,
                     help='MAVLink system id this bridge sends as. Must differ '
                          'from QGroundControl (255) when both are connected.')
     ap.add_argument('--target-component', type=int, default=1)
     args = ap.parse_args()
+    signing_key = load_signing_key(args.signing_key_file) if args.signing_key_file else None
+    if args.require_signed and not signing_key:
+        raise SystemExit('[bridge] --require-signed needs --signing-key-file')
 
     # Line-buffer stdout. Python block-buffers when it is not writing to a
     # terminal, so under systemd every print sits in a 4 KB buffer and
@@ -601,9 +697,12 @@ def main():
             raise SystemExit(2)
         commander = Commander(args.command_link, args.allow_arm,
                               args.target_system, args.target_component,
-                              args.gcs_system)
+                              args.gcs_system, signing_key, args.require_signed)
 
-    link = Link(args.udp_host, args.udp_port, args.drone_id, args.target_system)
+    link = Link(args.udp_host, args.udp_port, args.drone_id, args.target_system,
+                signing_key, args.require_signed)
+    print(f'[bridge] signing    : ' + ('OFF' if not signing_key else
+          ('REQUIRED (unsigned telemetry dropped)' if args.require_signed else 'on (unsigned telemetry still accepted)')))
     threading.Thread(target=link.run, daemon=True).start()
 
     print(f'[bridge] MAVLink in : udp://{args.udp_host}:{args.udp_port}')

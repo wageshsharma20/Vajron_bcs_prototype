@@ -21,8 +21,12 @@ Environment=PYTHONUNBUFFERED=1
 # (14560 is the router's command endpoint -- see mavlink-router.conf)
 # and, only if you want ARM/TAKEOFF from the GCS as well, --allow-arm.
 # Needs pymavlink:  sudo pip3 install pymavlink
+# VAJRON_SIGNING_ARGS is filled in by install-on-pi.sh: the signing key file if
+# one was set up, nothing otherwise. --require-signed is never added for you --
+# run bridge/provision_signing.py first and add it only if that reports the
+# aircraft signs its telemetry, or the display goes blank.
 ExecStart=/usr/bin/python3 /opt/vajron-gcs/bridge/mavlink_bridge.py \
-          --udp-port 14551 --http-port 8082 --drone-id DRONE-01
+          --udp-port 14551 --http-port 8082 --drone-id DRONE-01 VAJRON_SIGNING_ARGS
 Restart=always
 RestartSec=2
 User=vajron-gcs-user-placeholder

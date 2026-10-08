@@ -223,7 +223,37 @@ echo "==> Installing the MAVLink bridge (UDP 14551 -> HTTP 8082)"
 if [[ -d "${SCRIPT_DIR}/bridge" ]]; then
   sudo rm -rf "${APP_DIR}/bridge"
   sudo cp -r "${SCRIPT_DIR}/bridge" "${APP_DIR}/bridge"
-  sed "s/vajron-gcs-user-placeholder/${RUN_USER}/" "${SCRIPT_DIR}/vajron-mavlink.service" \
+  # MAVLink signing key. Optional, and harmless to set before the aircraft has
+  # it: an aircraft with no key accepts signed commands, and unsigned telemetry
+  # is still accepted until you deliberately add --require-signed.
+  # Pass VAJRON_SIGNING_PASSPHRASE=... to script this.
+  SIGNING_KEY_FILE="${CONF_DIR}/mavlink-signing.key"
+  SIGNING_ARGS=""
+  if [[ ! -f "$SIGNING_KEY_FILE" ]]; then
+    SIGN_PASS="${VAJRON_SIGNING_PASSPHRASE:-}"
+    if [[ -z "$SIGN_PASS" && -t 0 ]]; then
+      echo
+      echo "    MAVLink signing passphrase (protects the aircraft from forged commands)."
+      echo "    Keep it safe: an aircraft that enforces signing ignores any ground"
+      echo "    station without it. See bridge/README.md before entering it in QGC."
+      read -rsp "    Passphrase (Enter to skip): " SIGN_PASS; echo
+    fi
+    if [[ -n "$SIGN_PASS" ]]; then
+      printf '%s\n' "$SIGN_PASS" | sudo tee "$SIGNING_KEY_FILE" > /dev/null
+      unset SIGN_PASS
+    fi
+  fi
+  if [[ -f "$SIGNING_KEY_FILE" ]]; then
+    # Readable by the bridge's user only. This file IS the key.
+    sudo chown "root:${RUN_USER}" "$SIGNING_KEY_FILE"
+    sudo chmod 640 "$SIGNING_KEY_FILE"
+    SIGNING_ARGS="--signing-key-file ${SIGNING_KEY_FILE}"
+    echo "    signing key: ${SIGNING_KEY_FILE} (commands signed, telemetry verified)"
+  else
+    echo "    signing: off (re-run with VAJRON_SIGNING_PASSPHRASE=... to enable)"
+  fi
+  sed -e "s/vajron-gcs-user-placeholder/${RUN_USER}/" -e "s|VAJRON_SIGNING_ARGS|${SIGNING_ARGS}|" \
+    "${SCRIPT_DIR}/vajron-mavlink.service" \
     | sudo tee /etc/systemd/system/vajron-mavlink.service > /dev/null
   sudo systemctl daemon-reload
   sudo systemctl enable --now vajron-mavlink.service
