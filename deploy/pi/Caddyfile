@@ -1,0 +1,34 @@
+# TLS front door for the Vajron GCS. Installed to /etc/caddy/Caddyfile.
+#
+# Only matters for OTHER machines: the Pi's own kiosk talks to localhost and no
+# traffic leaves the box. A laptop on the field network opens
+#     https://<pi>:8443/
+# and gets the page and the bridge from ONE origin -- an HTTPS page is not
+# allowed to read a plain-HTTP bridge, so they must not be split.
+#
+# `tls internal`: Caddy runs its own certificate authority. Nothing here needs
+# the internet or a public domain, which a field Pi has neither of. The cost is
+# that each laptop must trust Caddy's root certificate once (install-on-pi.sh
+# prints where it is).
+
+{
+	# The admin API is not needed and should not listen on the field network.
+	admin off
+}
+
+VAJRON_SITE_ADDRESSES {
+	tls internal
+
+	# The bridge, prefix stripped: /bridge/telemetry/stream -> /telemetry/stream
+	handle_path /bridge/* {
+		reverse_proxy 127.0.0.1:8082 {
+			# Server-Sent Events must not be buffered, or telemetry arrives in
+			# lumps instead of at 10 Hz.
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8080
+	}
+}

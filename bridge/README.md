@@ -225,3 +225,22 @@ signing ignores every ground station without it.
 commands against an aircraft that enforces signing; `test_provision.py` covers
 an aircraft that signs everything, one that signs only commands, and one that
 ignores the key.
+
+
+## HTTPS for remote stations
+
+On the Pi, Caddy serves `https://<pi>:8443/`: the page at `/` and the bridge at
+`/bridge/*`, from **one** origin. They cannot be split: a page loaded over HTTPS
+is not allowed to read a plain-HTTP bridge (mixed content), so the page uses
+`<its own origin>/bridge` whenever it is served over HTTPS (`src/config.ts`).
+
+The Pi's own kiosk stays on `http://localhost:8080` -- that traffic never leaves
+the machine, so encrypting it protects nothing.
+
+Certificates come from Caddy's internal authority (`tls internal`), so no
+internet or public domain is needed. Each laptop trusts the Pi's root
+certificate once; the installer prints how. Config: `deploy/pi/Caddyfile`.
+
+Verified against Caddy 2.11 with this exact Caddyfile: certificate chain checks
+against the internal root, an untrusting client is refused, and Server-Sent
+Events pass through unbuffered (about 30 events in 3 s at 10 Hz).

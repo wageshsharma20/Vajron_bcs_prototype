@@ -306,6 +306,46 @@ curl -fsS -o /dev/null "${URL}/" \
 echo "    serving OK"
 
 # ----------------------------------------------------------------- browser lock
+# ----------------------------------------------------------------- TLS
+# HTTPS for laptops on the field network: https://<pi>:8443/ serves the page
+# and, under /bridge, the bridge -- one origin, because an HTTPS page may not
+# read a plain-HTTP bridge. The Pi's own kiosk stays on http://localhost: that
+# traffic never leaves the machine, so encrypting it protects nothing.
+echo "==> Setting up HTTPS for remote stations (port 8443)"
+TLS_OK=0
+if ! command -v caddy > /dev/null; then
+  sudo apt-get install -y -qq caddy || true
+fi
+if command -v caddy > /dev/null && [[ -f "${SCRIPT_DIR}/Caddyfile" ]]; then
+  # Certificates name the addresses a laptop will actually type. An address
+  # missing here produces a certificate warning, so list them all; re-run this
+  # script if the Pi's IP address changes.
+  SITES="https://localhost:8443, https://$(hostname).local:8443"
+  for ip in $(hostname -I 2>/dev/null); do
+    [[ "$ip" == *:* ]] && continue          # skip IPv6 for typing convenience
+    SITES="${SITES}, https://${ip}:8443"
+  done
+  sudo mkdir -p /etc/caddy
+  sed "s|VAJRON_SITE_ADDRESSES|${SITES}|" "${SCRIPT_DIR}/Caddyfile" | sudo tee /etc/caddy/Caddyfile > /dev/null
+  if sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile > /dev/null 2>&1; then
+    sudo systemctl enable caddy > /dev/null 2>&1 || true
+    sudo systemctl restart caddy
+    sleep 3
+    if curl -fsSk https://localhost:8443/ -o /dev/null && curl -fsSk https://localhost:8443/bridge/health -o /dev/null; then
+      TLS_OK=1
+      echo "    HTTPS OK: page and bridge both answer on 8443"
+    else
+      echo "    WARNING: caddy is running but https://localhost:8443 did not answer." >&2
+      echo "    See: sudo journalctl -u caddy -n 30" >&2
+    fi
+  else
+    echo "    WARNING: the generated Caddyfile did not validate; HTTPS skipped." >&2
+  fi
+else
+  echo "    caddy unavailable (no internet?) - remote stations use plain HTTP." >&2
+fi
+CADDY_ROOT=/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
+
 echo "==> Confining Chromium to the GCS"
 if [[ -f "${SCRIPT_DIR}/chromium-policy.json" ]]; then
   for d in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; do
@@ -525,6 +565,14 @@ THREE WAYS BACK IN — in order of convenience:
     Make sure it has NO .txt on the end.
     Put the card back and boot: the kiosk stays off and you get a console.
     Delete that file to re-arm the kiosk.
+
+REMOTE STATIONS (laptops on the field network):
+    https://$(hostname).local:8443/   $( (( TLS_OK )) && echo "(working)" || echo "(NOT set up - see warnings above)")
+    Each laptop must trust this Pi's certificate authority ONCE, or the browser
+    refuses the connection. Copy it off the Pi:
+        sudo cat ${CADDY_ROOT}
+    and add it to the laptop's trusted roots (macOS: Keychain Access ->
+    System -> drag in -> set "Always Trust"; Windows: certmgr -> Trusted Root).
 
 Other commands:
     vajron-unlock --desktop    stop the kiosk and start the desktop

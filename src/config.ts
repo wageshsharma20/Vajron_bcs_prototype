@@ -20,6 +20,14 @@ function resolveBridgeUrl(): string {
   } catch {
     // A malformed query string must not stop the GCS from starting.
   }
+  // Served over HTTPS (Caddy on the Pi, port 8443): the bridge sits behind the
+  // same origin at /bridge. It cannot be reached at http://...:8082 from here --
+  // browsers block plain-HTTP requests from an HTTPS page as mixed content.
+  // On a host with no bridge (the public Vercel build) that path simply 404s;
+  // EventSource does not retry a non-200 response, so the page stays in demo.
+  if (window.location.protocol === 'https:') {
+    return `${window.location.origin}/bridge`;
+  }
   return DEFAULT_BRIDGE;
 }
 
