@@ -616,7 +616,7 @@ class QuietServer(ThreadingHTTPServer):
         super().handle_error(request, client_address)
 
 
-def make_handler(link, rate_hz, commander, token):
+def make_handler(link, rate_hz, commander, token, mission_only=False):
     mission_cache = {}
     class Handler(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
@@ -652,7 +652,8 @@ def make_handler(link, rate_hz, commander, token):
                     'ok': True,
                     'connected': s['connected'],
                     'packets': s['packets'],
-                    'commanding': commander is not None,
+                    'commanding': commander is not None and not mission_only,
+                    'missionRead': commander is not None,
                     # Lets an operator see whether the aircraft actually signs
                     # its telemetry BEFORE turning on --require-signed, which
                     # would otherwise blank the screen on an aircraft that does not.
@@ -671,6 +672,11 @@ def make_handler(link, rate_hz, commander, token):
         def do_POST(self):
             if not self.path.startswith('/command'):
                 return self._json({'ok': False, 'error': 'not found'})
+            if commander is not None and mission_only:
+                return self._json({
+                    'ok': False,
+                    'error': 'this station only reads the mission; commanding is not enabled',
+                }, status=503)
             if commander is None:
                 # 503, not 200-with-error: "commanding is switched off" is a
                 # different thing from "the aircraft refused", and the UI has
@@ -767,6 +773,10 @@ def main():
     ap.add_argument('--allow-arm', action='store_true',
                     help='additionally permit ARM, DISARM and TAKEOFF. These spin '
                          'propellers; off unless you pass this.')
+    ap.add_argument('--mission-only', action='store_true',
+                    help='open --command-link only to READ the mission; refuse every '
+                         'command. Lets a station show the real mission without being '
+                         'able to fly the aircraft.')
     ap.add_argument('--command-token', default=None, metavar='SECRET',
                     help='require this token on POST /command (header '
                          'X-Vajron-Token). Telemetry stays open.')
@@ -822,11 +832,13 @@ def main():
 
     if commander is None:
         print('[bridge] commanding : OFF (receive-only)')
+    elif args.mission_only:
+        print(f'[bridge] commanding : OFF (mission read-only via {args.command_link})')
     else:
         print(f'[bridge] commanding : {args.command_link}'
               f'{"  (arm/takeoff ENABLED)" if args.allow_arm else "  (arm/takeoff blocked)"}')
 
-    if commander is not None and not args.command_token:
+    if commander is not None and not args.command_token and not args.mission_only:
         # Not fatal: this bridge is routinely run against a simulator on
         # localhost, and refusing to start would be theatre there. But the
         # two-tier --command-link/--allow-arm gating decides which commands
@@ -837,7 +849,8 @@ def main():
         print('[bridge]          the aircraft. Set a token before real hardware.')
 
     srv = QuietServer((args.http_host, args.http_port),
-                      make_handler(link, args.rate, commander, args.command_token))
+                      make_handler(link, args.rate, commander, args.command_token,
+                                   args.mission_only))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

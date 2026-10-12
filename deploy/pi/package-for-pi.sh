@@ -23,7 +23,20 @@ npx expo export -p web
 echo "==> Staging payload"
 mkdir -p "${STAGE}/vajron-gcs-pi"
 cp -r "${PROJECT}/dist" "${STAGE}/vajron-gcs-pi/dist"
-cp -r "${PROJECT}/bridge" "${STAGE}/vajron-gcs-pi/bridge"
+# The bridge, with a PURE-PYTHON pymavlink: the Pi then needs no internet and
+# no compiler for it. bridge/vendor on this machine also holds platform-specific
+# wheels (lxml, fastcrc, a Cython log indexer) that would not run on the Pi;
+# pymavlink works without all of them for a live link. Verified by running the
+# full bridge test suite against exactly this staged copy.
+if [[ ! -d "${PROJECT}/bridge/vendor/pymavlink" ]]; then
+  echo "==> Fetching pymavlink into bridge/vendor (once)"
+  /usr/bin/python3 -m pip install --quiet --no-deps --target "${PROJECT}/bridge/vendor" pymavlink
+fi
+mkdir -p "${STAGE}/vajron-gcs-pi/bridge/vendor"
+rsync -a --exclude '__pycache__' --exclude '*.pyc' --exclude '*.so' --exclude '*.dylib' \
+      --exclude 'vendor/*' "${PROJECT}/bridge/" "${STAGE}/vajron-gcs-pi/bridge/"
+rsync -a --exclude '__pycache__' --exclude '*.pyc' --exclude '*.so' \
+      "${PROJECT}/bridge/vendor/pymavlink" "${STAGE}/vajron-gcs-pi/bridge/vendor/"
 cp "${HERE}/install-on-pi.sh" \
    "${HERE}/vajron-gcs.service" \
    "${HERE}/vajron-gcs-kiosk.service" \

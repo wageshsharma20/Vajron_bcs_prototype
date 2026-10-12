@@ -252,22 +252,38 @@ if [[ -d "${SCRIPT_DIR}/bridge" ]]; then
   else
     echo "    signing: off (re-run with VAJRON_SIGNING_PASSPHRASE=... to enable)"
   fi
-  sed -e "s/vajron-gcs-user-placeholder/${RUN_USER}/" -e "s|VAJRON_SIGNING_ARGS|${SIGNING_ARGS}|" \
+  # Mission read-back. The bridge reads the aircraft's mission (so the GCS
+  # shows what QGC actually uploaded) over the router's command endpoint, in
+  # --mission-only mode: it can READ the mission and refuses every command.
+  #
+  # Only if pymavlink really imports: --command-link without it makes the
+  # bridge exit at startup, which would take telemetry down with it. The
+  # package ships a pure-Python pymavlink, so this needs no internet.
+  COMMAND_ARGS=""
+  if (( ROUTER_OK )) && python3 -c "import os,sys; os.environ['MAVLINK20']='1'; sys.path.insert(0,'${APP_DIR}/bridge/vendor'); from pymavlink import mavutil" 2>/dev/null; then
+    COMMAND_ARGS="--command-link udpout:127.0.0.1:14560 --mission-only"
+    echo "    mission read-back: on (read-only; commanding off)"
+  elif (( ROUTER_OK )); then
+    echo "    WARNING: pymavlink would not import; mission read-back off" >&2
+  fi
+  sed -e "s/vajron-gcs-user-placeholder/${RUN_USER}/" \
+      -e "s|VAJRON_SIGNING_ARGS|${SIGNING_ARGS} ${COMMAND_ARGS}|" \
     "${SCRIPT_DIR}/vajron-mavlink.service" \
     | sudo tee /etc/systemd/system/vajron-mavlink.service > /dev/null
   sudo systemctl daemon-reload
   sudo systemctl enable --now vajron-mavlink.service
-  echo "    bridge running - point QGroundControl's MAVLink forwarding at this Pi:14551"
-  # Receive-only unless someone deliberately turns commanding on: the unit ships
-  # without --command-link, and enabling it is an edit plus a restart. A ground
-  # station that can arm an aircraft the moment it is installed is not a default
-  # anyone should get by accident.
-  if python3 -c "import pymavlink" 2>/dev/null; then
-    echo "    pymavlink present - commanding can be enabled by editing the unit"
+  if (( ROUTER_OK )); then
+    echo "    bridge running, fed by the router. Do NOT also enable QGC's MAVLink"
+    echo "    forwarding: the bridge would receive every packet twice."
   else
-    echo "    (telemetry only; for commanding: pip3 install pymavlink, then add"
-    echo "     --command-link to /etc/systemd/system/vajron-mavlink.service)"
+    echo "    bridge running - point QGroundControl's MAVLink forwarding at this Pi:14551"
   fi
+  # Commanding stays OFF until someone deliberately turns it on: a ground
+  # station that can arm an aircraft the moment it is installed is not a
+  # default anyone should get by accident. To enable: edit the unit, replace
+  # --mission-only with  --command-token <secret>  (plus --allow-arm only if
+  # ARM/TAKEOFF from this GCS is wanted), then daemon-reload and restart
+  # vajron-mavlink. See bridge/README.md.
 else
   echo "    WARNING: no bridge/ in the payload; the GCS will stay in demo mode" >&2
 fi

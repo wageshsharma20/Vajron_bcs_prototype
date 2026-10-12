@@ -16,9 +16,10 @@ Environment=PYTHONUNBUFFERED=1
 #
 # 14551, not 14550: QGroundControl binds 14550 to listen for vehicles. If QGC
 # ever runs on this same Pi, a bridge on 14550 would fail to start.
-# Receive-only as shipped. To let the GCS command the aircraft, append
-#   --command-link udpout:127.0.0.1:14560 --command-token <secret>
-# (14560 is the router's command endpoint -- see mavlink-router.conf)
+# As installed with the router: --command-link udpout:127.0.0.1:14560
+# --mission-only, i.e. the mission can be READ and every command is refused.
+# To let this GCS command the aircraft, replace --mission-only with
+#   --command-token <secret>   (and --allow-arm only if ARM/TAKEOFF is wanted)
 # and, only if you want ARM/TAKEOFF from the GCS as well, --allow-arm.
 # Needs pymavlink:  sudo pip3 install pymavlink
 # VAJRON_SIGNING_ARGS is filled in by install-on-pi.sh: the signing key file if
