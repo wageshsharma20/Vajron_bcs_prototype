@@ -245,7 +245,10 @@ if [[ -d "${SCRIPT_DIR}/bridge" ]]; then
   fi
   if [[ -f "$SIGNING_KEY_FILE" ]]; then
     # Readable by the bridge's user only. This file IS the key.
-    sudo chown "root:${RUN_USER}" "$SIGNING_KEY_FILE"
+    # The user's actual primary group, not a group assumed to share the user's
+    # name: usually true on Raspberry Pi OS, but not guaranteed, and under
+    # set -e a failed chown here would abort the whole install halfway.
+    sudo chown "root:$(id -gn "$RUN_USER")" "$SIGNING_KEY_FILE"
     sudo chmod 640 "$SIGNING_KEY_FILE"
     SIGNING_ARGS="--signing-key-file ${SIGNING_KEY_FILE}"
     echo "    signing key: ${SIGNING_KEY_FILE} (commands signed, telemetry verified)"
