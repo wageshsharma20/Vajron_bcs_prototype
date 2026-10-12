@@ -56,7 +56,14 @@ export default function MissionControlScreen({ route }: any) {
   // loop runs at 10 Hz, so it completed in about 20 seconds while the sortie it
   // represents is 124 — the route finished and every waypoint lit while the
   // aircraft was still visibly outbound on the feed.
-  const currentWaypoint = Math.round(missionFraction * TOTAL_WAYPOINTS);
+  // On a real link the bar shows where the AIRCRAFT is in ITS mission, from
+  // MISSION_CURRENT -- not the demo recording's position in the demo route.
+  const realLink = useLinkStore(s => s.mode !== 'demo');
+  const liveTotal = telemetry?.missionTotal ?? 0;
+  const progressTotal = realLink && liveTotal > 0 ? liveTotal : TOTAL_WAYPOINTS;
+  const currentWaypoint = realLink && liveTotal > 0
+    ? Math.min(telemetry?.missionSeq ?? 0, liveTotal)
+    : Math.round(missionFraction * TOTAL_WAYPOINTS);
   const missionProgress = isArmed ? missionFraction : undefined;
 
   // What the aircraft said about the last command. A command that was refused
@@ -141,7 +148,7 @@ export default function MissionControlScreen({ route }: any) {
     />
   );
   const progress = (
-    <MissionProgressBar totalWaypoints={TOTAL_WAYPOINTS} currentWaypoint={currentWaypoint} />
+    <MissionProgressBar totalWaypoints={progressTotal} currentWaypoint={currentWaypoint} />
   );
 
   const g = tokens.gutter;

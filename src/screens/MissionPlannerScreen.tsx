@@ -9,6 +9,7 @@ import { Waypoint, PreFlightCheck } from '../data/types';
 import { Page, useHeaderColors, Rule, VRule } from '../components/Chrome';
 import { FLIGHT_WAYPOINTS } from '../data/flightWaypoints';
 import { generateSurveyGrid } from '../data/missionUtils';
+import { useAircraftMission } from '../hooks/useAircraftMission';
 
 /**
  * Mission Planner: parameters as a strip across the top, the map holding the
@@ -115,6 +116,39 @@ export default function MissionPlannerScreen({ navigation }: any) {
     </View>
   );
 
+  const aircraftMission = useAircraftMission('DRONE-01');
+
+  // On a live link, say what the aircraft really holds. The route on this map
+  // is the demo route and is never uploaded -- without this note an operator
+  // could reasonably believe the aircraft will fly what is drawn here.
+  const missionNotice =
+    aircraftMission.status === 'demo' ? null : (
+      <View
+        style={{
+          paddingHorizontal: g,
+          paddingVertical: sp(10),
+          backgroundColor: aircraftMission.status === 'error' ? theme.accentRedMuted : theme.accentAmberMuted,
+          borderBottomWidth: tokens.rule.hair,
+          borderBottomColor: theme.hairline,
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: typography.fonts.semiBold,
+            fontSize: 13,
+            color: aircraftMission.status === 'error' ? theme.accentRed : theme.accentAmber,
+          }}
+        >
+          {aircraftMission.status === 'loading' && 'Reading the mission from the aircraft…'}
+          {aircraftMission.status === 'ok' &&
+            `Mission on the aircraft: ${aircraftMission.count} waypoints, planned in QGroundControl. ` +
+            'The route below is the demo route and is not sent to the aircraft.'}
+          {aircraftMission.status === 'error' &&
+            `Could not read the aircraft's mission: ${aircraftMission.error}`}
+        </Text>
+      </View>
+    );
+
   return (
     <Page
       title="MISSION PLANNER"
@@ -138,6 +172,8 @@ export default function MissionPlannerScreen({ navigation }: any) {
         <View style={{ flex: 2 }}>{params}</View>
         <View style={{ flex: 1.1, paddingLeft: g }}>{routeActions}</View>
       </View>
+
+      {missionNotice}
 
       <View style={styles.mapSlot}>
         <MapWaypointEditor 

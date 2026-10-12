@@ -244,3 +244,30 @@ certificate once; the installer prints how. Config: `deploy/pi/Caddyfile`.
 Verified against Caddy 2.11 with this exact Caddyfile: certificate chain checks
 against the internal root, an untrusting client is refused, and Server-Sent
 Events pass through unbuffered (about 30 events in 3 s at 10 Hz).
+
+
+## Mission sync: QGC writes, the DDA GCS reads
+
+One rule: **QGroundControl plans and uploads missions; the DDA GCS only reads
+back what the aircraft actually holds.** Two stations both writing missions is
+how an aircraft ends up flying a plan neither operator is looking at.
+
+- `MISSION_CURRENT` (decoded with the standard library) gives the current
+  mission item and, on recent autopilots, the mission length. Live Ops' progress
+  bar uses these on a live link instead of the demo route's.
+- `GET /mission` downloads the full mission with the MAVLink mission protocol
+  via pymavlink, retrying each item (radios drop packets). It is cached and
+  re-read only when the aircraft reports a different length -- which is what
+  happens when QGC uploads a new plan -- or on `?refresh`. Needs
+  `--command-link`; without it, 503.
+- The Plan screen, on a live link, states how many waypoints the aircraft holds
+  and that the route drawn on its map is the demo route and is **not** uploaded.
+
+The bridge's command connection has exactly one reader thread, which routes
+ACKs and mission messages to whoever is waiting. `recv_match(type=...)`
+discards everything it does not match, so two readers on one connection would
+each silently eat the other's messages.
+
+`test_mission.py`: every item lost once and retried, a command issued in the
+middle of a download, caching, and re-reading after the plan changes.
+`fake_drone.py` now carries a 9-item mission for testing the screens.

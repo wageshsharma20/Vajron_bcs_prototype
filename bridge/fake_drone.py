@@ -19,6 +19,13 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 seq = 0
 
 
+# A small survey mission, as QGroundControl would have uploaded it:
+# home, takeoff, 6 waypoints, return-to-launch.
+MISSION = ([(16, 28.618939, 77.301383, 0), (22, 28.618939, 77.301383, 30)]
+           + [(16, 28.6186 - 0.00005 * k, 77.3024 + 0.0012 * k, 40) for k in range(6)]
+           + [(20, 0.0, 0.0, 0)])
+
+
 def serve_commands():
     """Accept COMMAND_LONG and acknowledge it, the way an autopilot would."""
     try:
@@ -45,7 +52,13 @@ def serve_commands():
         out.peer = addr
         try:
             for m in mav.parse_buffer(data) or []:
-                if m.get_type() == 'COMMAND_LONG':
+                if m.get_type() == 'MISSION_REQUEST_LIST':
+                    mav.mission_count_send(m.get_srcSystem(), m.get_srcComponent(), len(MISSION), 0)
+                elif m.get_type() == 'MISSION_REQUEST_INT' and m.seq < len(MISSION):
+                    cmd, lat, lng, alt = MISSION[m.seq]
+                    mav.mission_item_int_send(m.get_srcSystem(), m.get_srcComponent(), m.seq, 3, cmd,
+                                              0, 1, 0, 0, 0, 0, int(lat * 1e7), int(lng * 1e7), alt, 0)
+                elif m.get_type() == 'COMMAND_LONG':
                     name = mavlink.enums['MAV_CMD'][m.command].name \
                         if m.command in mavlink.enums['MAV_CMD'] else str(m.command)
                     print(f'  [vehicle] got {name} -> ACCEPTED')
@@ -83,5 +96,7 @@ while True:
                        100, 100, 0, 0, 3, 18))
     v2(74, struct.pack('<ffffhH', spd + 1, spd, alt, 0.2, hdg, 60))
     v2(109, struct.pack('<HHBBBBB', 0, 0, 231, 225, 98, 40, 38))
+    # MISSION_CURRENT: advance one item every 8 s, so progress is visible
+    v2(42, struct.pack('<HHBB', min(int(t / 8) + 1, len(MISSION) - 1), len(MISSION), 2, 1))
     time.sleep(0.2)
     t += 0.2

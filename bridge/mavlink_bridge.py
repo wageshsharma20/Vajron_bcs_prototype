@@ -30,6 +30,7 @@ import re
 import os
 import sys
 import math
+import queue
 import socket
 import struct
 import threading
@@ -75,6 +76,7 @@ HDR_V1, HDR_V2 = 6, 10
 
 HEARTBEAT, SYS_STATUS, GPS_RAW_INT = 0, 1, 24
 GLOBAL_POSITION_INT, VFR_HUD, RADIO_STATUS = 33, 74, 109
+MISSION_CURRENT = 42
 
 MAV_MODE_FLAG_SAFETY_ARMED = 0x80
 MAV_COMP_ID_AUTOPILOT1 = 1
@@ -163,6 +165,9 @@ class Vehicle:
             'signalStrength': 0, 'linkRssi': 0, 'gpsFixType': 'none',
             'gpsSatsVisible': 0, 'flightMode': 'idle', 'isArmed': False,
             'distanceToHome': 0.0,
+            # From MISSION_CURRENT. missionTotal is 0 when the autopilot does
+            # not send that (newer) field -- GET /mission gives the count then.
+            'missionSeq': 0, 'missionTotal': 0,
         }
         self._home = None
 
@@ -217,6 +222,11 @@ class Vehicle:
         # figure as a percentage, so match it rather than inventing a scale.
         self.f['signalStrength'] = min(100, round(rssi / 254.0 * 100))
         self.f['linkRssi'] = rssi - 256 if rssi > 127 else rssi
+
+    def mission_current(self, p):
+        seq, total = _unpack('<HH', p)
+        self.f['missionSeq'] = seq
+        self.f['missionTotal'] = total
 
     def snapshot(self, drone_id):
         out = dict(self.f)
@@ -354,10 +364,17 @@ class Link:
                     v.global_position(payload)
                 elif msgid == VFR_HUD:
                     v.vfr_hud(payload)
+                elif msgid == MISSION_CURRENT:
+                    v.mission_current(payload)
                 v.last_seen = time.time()
             except (struct.error, IndexError):
                 # A malformed frame must never take the bridge down mid-flight.
                 pass
+
+    def mission_total(self):
+        with self.lock:
+            v = self.vehicles.get(self.target_system)
+            return v.f['missionTotal'] if v else 0
 
     def state(self):
         with self.lock:
@@ -374,6 +391,11 @@ class Link:
                 'packets': self.packets,
                 'vehicles': [primary.snapshot(self.drone_id)],
             }
+
+
+# Mission items that are places the aircraft flies to, as opposed to
+# instructions (speed changes, camera triggers, DO_* items) that share the list.
+NAV_WAYPOINT_COMMANDS = {16, 17, 18, 19, 21, 22, 82}   # WAYPOINT, LOITER_*, LAND, TAKEOFF, SPLINE
 
 
 class Commander:
@@ -416,6 +438,7 @@ class Commander:
         # ACK can only belong to the request that is waiting for it.
         self.send_lock = threading.Lock()
         self.acks = {}
+        self.mission_q = queue.Queue()
         # NOT 255/190. That is QGroundControl's own identity, and two ground
         # stations with one identity on one link get each other's
         # acknowledgements and mission traffic.
@@ -431,16 +454,83 @@ class Commander:
         threading.Thread(target=self._read_acks, daemon=True).start()
 
     def _read_acks(self):
+        """The ONLY reader of this connection.
+
+        recv_match(type=...) discards every message that does not match. With
+        two threads reading -- one for ACKs, one for a mission download -- each
+        silently ate the other's messages. One reader routes everything.
+        """
         while True:
             try:
-                msg = self.conn.recv_match(type='COMMAND_ACK', blocking=True, timeout=5)
+                msg = self.conn.recv_match(blocking=True, timeout=5)
             except Exception:
                 time.sleep(0.5)
                 continue
             # Only the aircraft we command may answer for it.
-            if msg is not None and msg.get_srcSystem() == self.target[0]:
+            if msg is None or msg.get_srcSystem() != self.target[0]:
+                continue
+            kind = msg.get_type()
+            if kind == 'COMMAND_ACK':
                 with self.lock:
                     self.acks[msg.command] = (msg.result, time.monotonic())
+            elif kind in ('MISSION_COUNT', 'MISSION_ITEM_INT'):
+                self.mission_q.put(msg)
+
+    def _next(self, kind, timeout, want=None):
+        """Wait for a mission message of `kind` (optionally matching `want`)."""
+        end = time.monotonic() + timeout
+        while True:
+            left = end - time.monotonic()
+            if left <= 0:
+                return None
+            try:
+                msg = self.mission_q.get(timeout=left)
+            except queue.Empty:
+                return None
+            if msg.get_type() == kind and (want is None or want(msg)):
+                return msg
+
+    def download_mission(self, timeout=15.0):
+        """Read the mission stored on the aircraft (MAVLink mission protocol).
+
+        Read-only by design. The single-writer rule: QGroundControl plans and
+        uploads, the DDA GCS only reads back what the aircraft actually holds.
+        Two stations both writing missions is how an aircraft ends up flying a
+        plan that neither operator is looking at.
+
+        Holds send_lock so a download never interleaves with a command and
+        steals its ACK.
+        """
+        mav = mavutil.mavlink
+        ts, tc = self.target
+        with self.send_lock:
+            while not self.mission_q.empty():          # drop leftovers from a past attempt
+                self.mission_q.get_nowait()
+            self.conn.mav.mission_request_list_send(ts, tc, mav.MAV_MISSION_TYPE_MISSION)
+            count = self._next('MISSION_COUNT', 3)
+            if count is None:
+                return {'ok': False, 'error': 'aircraft did not answer the mission request'}
+            items = []
+            deadline = time.monotonic() + timeout
+            for seq in range(count.count):
+                item = None
+                for _attempt in range(3):          # radios drop packets; retry each item
+                    self.conn.mav.mission_request_int_send(ts, tc, seq, mav.MAV_MISSION_TYPE_MISSION)
+                    item = self._next('MISSION_ITEM_INT', 1.0, lambda m, s=seq: m.seq == s)
+                    if item is not None:
+                        break
+                if item is None or time.monotonic() > deadline:
+                    return {'ok': False, 'error': f'mission download stopped at item {seq} of {count.count}'}
+                items.append({
+                    'seq': item.seq, 'command': item.command, 'frame': item.frame,
+                    'lat': item.x / 1e7, 'lng': item.y / 1e7, 'alt': item.z,
+                })
+            # Close the transaction so the autopilot is not left waiting on us.
+            self.conn.mav.mission_ack_send(ts, tc, mav.MAV_MISSION_ACCEPTED, mav.MAV_MISSION_TYPE_MISSION)
+        nav = [i for i in items if i['command'] in NAV_WAYPOINT_COMMANDS]
+        print(f'[mission] downloaded {len(items)} items ({len(nav)} waypoints)')
+        return {'ok': True, 'count': len(items), 'waypoints': nav, 'items': items,
+                'fetchedAt': time.time()}
 
     def available(self, name):
         if name in self.SAFE:
@@ -527,6 +617,7 @@ class QuietServer(ThreadingHTTPServer):
 
 
 def make_handler(link, rate_hz, commander, token):
+    mission_cache = {}
     class Handler(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
 
@@ -553,6 +644,8 @@ def make_handler(link, rate_hz, commander, token):
                 return self._stream()
             if self.path.startswith('/telemetry'):
                 return self._json(link.state())
+            if self.path.startswith('/mission'):
+                return self._mission()
             if self.path.startswith('/health'):
                 s = link.state()
                 return self._json({
@@ -609,6 +702,23 @@ def make_handler(link, rate_hz, commander, token):
             alt = body.get('altitude')
             result = commander.send(name, alt)
             return self._json(result, status=200 if result.get('ok') else 409)
+
+        def _mission(self):
+            if commander is None:
+                return self._json({'ok': False, 'error': 'reading the mission needs --command-link'},
+                                  status=503)
+            # Re-download only when the mission may have changed: first request,
+            # an explicit ?refresh, or the aircraft now reports a different total.
+            total = link.mission_total()
+            cache = mission_cache.get('data')
+            stale = (cache is None or 'refresh' in self.path
+                     or (total and total != cache.get('count')))
+            if stale:
+                result = commander.download_mission()
+                if not result.get('ok'):
+                    return self._json(result, status=502)
+                mission_cache['data'] = result
+            return self._json(mission_cache['data'])
 
         def _json(self, obj, status=200):
             body = json.dumps(obj).encode()

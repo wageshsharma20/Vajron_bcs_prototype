@@ -31,6 +31,9 @@ export interface TelemetryFrame {
   flightMode: 'idle' | 'manual' | 'stabilize' | 'auto' | 'rtl' | 'land' | 'hold' | 'loiter';
   isArmed: boolean;
   distanceToHome: number;
+  /** Live link only: the aircraft's current mission item and mission length. */
+  missionSeq?: number;
+  missionTotal?: number;
   jetsonCpuTemp: number;
   jetsonGpuTemp: number;
   inferenceFps: number;

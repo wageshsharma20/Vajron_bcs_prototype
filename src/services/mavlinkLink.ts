@@ -20,6 +20,7 @@ const LIVE_FIELDS: (keyof TelemetryFrame)[] = [
   'lat', 'lng', 'altitude', 'heading', 'groundSpeed', 'batteryPercent',
   'batteryVoltage', 'signalStrength', 'linkRssi', 'gpsFixType',
   'gpsSatsVisible', 'flightMode', 'isArmed', 'distanceToHome', 'timestamp',
+  'missionSeq', 'missionTotal',
 ];
 
 let source: EventSource | null = null;
