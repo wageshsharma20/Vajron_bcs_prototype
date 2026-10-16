@@ -88,6 +88,8 @@ class Simulator {
   private nextWp = 1;
   private speed = 0;
   private lastTick = 0;
+  private cruiseAlt = CRUISE_ALT;
+  private cruiseSpeed = 8;
 
   get running() {
     return this.timer !== null;
@@ -124,11 +126,11 @@ class Simulator {
   }
 
   /** Commands answer after a short delay, the way a radio round trip does. */
-  sendCommand(command: string): Promise<CommandResult> {
-    return new Promise(resolve => setTimeout(() => resolve(this.apply(command)), 300));
+  sendCommand(command: string, payload?: { altitude?: number; speed?: number }): Promise<CommandResult> {
+    return new Promise(resolve => setTimeout(() => resolve(this.apply(command, payload ?? {})), 300));
   }
 
-  private apply(command: string): CommandResult {
+  private apply(command: string, payload: { altitude?: number; speed?: number }): CommandResult {
     const ok = (): CommandResult => ({ ok: true, result: 'MAV_RESULT_ACCEPTED' });
     const denied = (why: string): CommandResult => ({ ok: false, result: 'MAV_RESULT_DENIED', error: why });
     const airborne = this.phase !== 'ground';
@@ -139,6 +141,10 @@ class Simulator {
         this.phase = 'mission';
         this.f = 0;
         this.nextWp = 1;
+        // The mission details chosen on the Plan screen, kept within limits a
+        // survey drone would actually fly at.
+        this.cruiseAlt = Math.max(10, Math.min(120, payload.altitude ?? CRUISE_ALT));
+        this.cruiseSpeed = Math.max(2, Math.min(15, payload.speed ?? 8));
         return ok();
       case 'hold':
       case 'pause':
@@ -165,7 +171,7 @@ class Simulator {
   private tick(dt: number) {
     switch (this.phase) {
       case 'mission': {
-        this.alt = Math.min(CRUISE_ALT, this.alt + CLIMB_RATE * dt);
+        this.alt = Math.min(this.cruiseAlt, this.alt + CLIMB_RATE * dt);
         this.f += dt / ROUTE_SECONDS;
         if (this.f >= 1) {
           // A finished mission returns home, as a real autopilot would.
@@ -176,7 +182,7 @@ class Simulator {
         if (distance(this.pos, p) > 0.5) this.heading = bearing(this.pos, p);
         this.pos = { lat: p.lat, lng: p.lng };
         this.nextWp = p.next;
-        this.speed = 8 + Math.sin(Date.now() / 4000) * 0.6;
+        this.speed = this.cruiseSpeed + Math.sin(Date.now() / 4000) * 0.4;
         break;
       }
       case 'hold':

@@ -44,7 +44,7 @@ class TelemetryService {
       if (droneId !== SIM_DRONE_ID) {
         return { ok: false, error: `No link to ${droneId}. The simulated aircraft is ${SIM_DRONE_ID}.` };
       }
-      return simulator.sendCommand(command);
+      return simulator.sendCommand(command, payload);
     }
     const real = mode !== 'demo';
     console.log(`[Command -> ${droneId}] ${command}${real ? ' (live)' : ' (demo)'}`, payload);

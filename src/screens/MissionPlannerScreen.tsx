@@ -55,7 +55,13 @@ export default function MissionPlannerScreen({ navigation }: any) {
 
   const handleLaunch = () => {
     setShowChecklist(false);
-    navigation.navigate('MissionControl', { droneId: 'DRONE-01' }); // Mock default
+    // The details chosen here travel with the launch, so TAKE OFF on Live Ops
+    // climbs to the altitude set on this screen rather than a fixed 30 m.
+    navigation.navigate('MissionControl', {
+      droneId: 'DRONE-01',
+      altitude: parseInt(altitude) || 30,
+      speed: parseFloat(speed) || 5,
+    });
   };
 
   const g = tokens.gutter;

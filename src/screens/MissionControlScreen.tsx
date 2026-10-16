@@ -107,7 +107,10 @@ export default function MissionControlScreen({ route }: any) {
 
   const handleTakeOffConfirm = () => {
     setTakeOffDialogVisible(false);
-    void runCommand('takeoff', { altitude: 30 });
+    void runCommand('takeoff', {
+      altitude: route.params?.altitude ?? 30,
+      speed: route.params?.speed,
+    });
   };
 
   const handleRtlConfirm = async () => {
