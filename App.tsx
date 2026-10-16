@@ -18,6 +18,9 @@ import { NotoSans_700Bold } from '@expo-google-fonts/noto-sans/700Bold';
 
 import { lightTheme, ThemeProvider, useTheme } from './src/theme';
 import { startMavlinkLink } from './src/services/mavlinkLink';
+import { simulator } from './src/services/simulator';
+import { telemetryService } from './src/services/telemetryService';
+import { SIM_ENABLED, BRIDGE_DISABLED } from './src/config';
 import CustomTabBar from './src/components/CustomTabBar';
 
 import FleetDashboardScreen from './src/screens/FleetDashboardScreen';
@@ -73,7 +76,16 @@ export default function App() {
   // Opened once for the life of the app. If no bridge is running the stream
   // simply never connects and the GCS stays in demo mode, which is the right
   // behaviour on a dev machine with no aircraft attached.
-  useEffect(() => startMavlinkLink(), []);
+  useEffect(() => {
+    const stopLink = BRIDGE_DISABLED ? () => {} : startMavlinkLink();
+    if (SIM_ENABLED) {
+      // The simulated aircraft replaces the canned replay; both writing to
+      // the same drone would fight over its readings.
+      telemetryService.stopMockReplay();
+      simulator.start();
+    }
+    return stopLink;
+  }, []);
 
   useEffect(() => {
     async function loadFonts() {

@@ -2,6 +2,7 @@ import { TELEMETRY_STREAM, LINK_TIMEOUT_MS } from '../config';
 import { useLinkStore } from '../data/linkStore';
 import { useTelemetryStore } from '../data/useTelemetryStore';
 import { telemetryService } from './telemetryService';
+import { simulator } from './simulator';
 import { TelemetryFrame } from '../data/types';
 
 /**
@@ -76,6 +77,8 @@ export function startMavlinkLink() {
     // frames into one indistinguishable stream.
     if (store.mode !== 'live') {
       telemetryService.stopMockReplay();
+      // A real aircraft outranks the simulated one, permanently.
+      simulator.stop();
       console.log(`[mavlink] live vehicle sysid ${vehicle.sysid} — demo replay stopped`);
     }
     // Stamped with the aircraft's own silence, not this message's arrival.

@@ -50,6 +50,38 @@ function resolveToken(): string | null {
   }
 }
 
+/**
+ * The in-page simulated aircraft (services/simulator).
+ *
+ * On by default only on the public website, which has no bridge and no drone
+ * to show. Anywhere else it must be asked for with ?sim=1, so a field station
+ * never starts flying a pretend aircraft just because its bridge is down.
+ * ?sim=0 turns it off everywhere.
+ */
+function resolveSim(): { enabled: boolean; bridgeDisabled: boolean } {
+  if (typeof window === 'undefined' || !window.location) return { enabled: false, bridgeDisabled: false };
+  let flag: string | null = null;
+  let bridgeOverride = false;
+  try {
+    const q = new URLSearchParams(window.location.search);
+    flag = q.get('sim');
+    bridgeOverride = q.has('bridge');
+  } catch {
+    // ignore a malformed query string
+  }
+  const publicSite = window.location.hostname.endsWith('.vercel.app');
+  return {
+    enabled: flag === '1' || (publicSite && flag !== '0'),
+    // The public site has no bridge: do not even try, or the console fills
+    // with failed requests. ?bridge=... still overrides.
+    bridgeDisabled: publicSite && !bridgeOverride,
+  };
+}
+
+const SIM = resolveSim();
+export const SIM_ENABLED = SIM.enabled;
+export const BRIDGE_DISABLED = SIM.bridgeDisabled;
+
 export const BRIDGE_URL = resolveBridgeUrl();
 export const COMMAND_TOKEN = resolveToken();
 export const TELEMETRY_STREAM = `${BRIDGE_URL}/telemetry/stream`;

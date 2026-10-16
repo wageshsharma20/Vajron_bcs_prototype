@@ -3,6 +3,7 @@ import { mockFlightPath } from '../data/mockFlightPath';
 import { useTelemetryStore } from '../data/useTelemetryStore';
 import { useLinkStore } from '../data/linkStore';
 import { sendVehicleCommand, CommandName, CommandResult } from './commandLink';
+import { simulator, SIM_DRONE_ID } from './simulator';
 
 type AlertCallback = (alert: DroneAlert) => void;
 
@@ -38,7 +39,14 @@ class TelemetryService {
     // drop down the demo path, where nothing is transmitted, {ok:true} is
     // returned, and the operator sees a silent success for a command that
     // never left the machine.
-    const real = useLinkStore.getState().mode !== 'demo';
+    const mode = useLinkStore.getState().mode;
+    if (mode === 'sim') {
+      if (droneId !== SIM_DRONE_ID) {
+        return { ok: false, error: `No link to ${droneId}. The simulated aircraft is ${SIM_DRONE_ID}.` };
+      }
+      return simulator.sendCommand(command);
+    }
+    const real = mode !== 'demo';
     console.log(`[Command -> ${droneId}] ${command}${real ? ' (live)' : ' (demo)'}`, payload);
 
     if (real) {

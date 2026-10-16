@@ -140,7 +140,10 @@ export default function MissionPlannerScreen({ navigation }: any) {
           }}
         >
           {aircraftMission.status === 'loading' && 'Reading the mission from the aircraft…'}
-          {aircraftMission.status === 'ok' &&
+          {aircraftMission.status === 'ok' && aircraftMission.simulated &&
+            `Simulated aircraft: its mission is this ${aircraftMission.count}-waypoint route. ` +
+            'Nothing on this screen is connected to a real drone.'}
+          {aircraftMission.status === 'ok' && !aircraftMission.simulated &&
             `Mission on the aircraft: ${aircraftMission.count} waypoints, planned in QGroundControl. ` +
             'The route below is the demo route and is not sent to the aircraft.'}
           {aircraftMission.status === 'error' &&

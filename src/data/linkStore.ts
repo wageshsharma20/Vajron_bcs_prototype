@@ -12,7 +12,11 @@ import { create } from 'zustand';
  * watching a smooth, plausible, entirely fictional aircraft. Once this store
  * has been live it can only go to 'lost', and the replay never restarts.
  */
-export type LinkMode = 'demo' | 'live' | 'lost';
+export type LinkMode = 'demo' | 'sim' | 'live' | 'lost';
+// 'sim': a simulated aircraft running inside the page (services/simulator).
+// It behaves like a real link for every screen, but is labelled as simulated
+// and is never 'everLive': a real aircraft replaces it (sim -> live), and
+// losing that real aircraft goes to 'lost', never back to 'sim'.
 
 interface LinkStore {
   mode: LinkMode;
@@ -30,6 +34,7 @@ interface LinkStore {
   markLive: (packets: number, lastFrameAt?: number, droneId?: string) => void;
   markTransport: (up: boolean) => void;
   markSilent: () => void;
+  markSim: (droneId: string) => void;
 }
 
 export const useLinkStore = create<LinkStore>((set, get) => ({
@@ -56,5 +61,10 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
 
   markSilent: () => {
     if (get().everLive) set({ mode: 'lost' });
+  },
+
+  // Only from demo. Never over a real link, live or lost.
+  markSim: droneId => {
+    if (!get().everLive) set({ mode: 'sim', liveDroneId: droneId });
   },
 }));

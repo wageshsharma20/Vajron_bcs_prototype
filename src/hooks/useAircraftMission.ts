@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { BRIDGE_URL } from '../config';
 import { useLinkStore } from '../data/linkStore';
 import { useTelemetryStore } from '../data/useTelemetryStore';
+import { simulator } from '../services/simulator';
 
 export type AircraftMission =
   | { status: 'demo' }
   | { status: 'loading' }
-  | { status: 'ok'; count: number; waypoints: { seq: number; lat: number; lng: number; alt: number }[] }
+  | { status: 'ok'; simulated?: boolean; count: number; waypoints: { seq: number; lat: number; lng: number; alt: number }[] }
   | { status: 'error'; error: string };
 
 /**
@@ -29,6 +30,11 @@ export function useAircraftMission(droneId: string): AircraftMission {
   const real = mode !== 'demo' && linked === droneId;
 
   useEffect(() => {
+    if (mode === 'sim' && linked === droneId) {
+      const waypoints = simulator.mission();
+      setMission({ status: 'ok', simulated: true, count: waypoints.length, waypoints });
+      return;
+    }
     if (!real) {
       setMission({ status: 'demo' });
       return;
@@ -47,7 +53,7 @@ export function useAircraftMission(droneId: string): AircraftMission {
         if (!cancelled) setMission({ status: 'error', error: `could not reach the bridge at ${BRIDGE_URL}` });
       });
     return () => { cancelled = true; };
-  }, [real, total]);
+  }, [real, total, mode]);
 
   return mission;
 }

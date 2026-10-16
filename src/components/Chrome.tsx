@@ -72,6 +72,8 @@ export function LinkBadge({ droneId }: { droneId?: string } = {}) {
     // The pale amber reads on the deep-green spine, where accentAmber — tuned
     // for dark text on a white page — would sink into the background.
     demo: { label: 'DEMO DATA', fg: STATUS_RAMPS.amber[0], bg: 'transparent' },
+    // Amber, like the demo: whatever it looks like, it is not a real aircraft.
+    sim: { label: 'SIMULATED AIRCRAFT', fg: STATUS_RAMPS.amber[0], bg: 'transparent' },
   };
   const { label, fg, bg } = otherAircraft
     ? { label: 'NOT CONNECTED', fg: STATUS_RAMPS.amber[0], bg: 'transparent' }
