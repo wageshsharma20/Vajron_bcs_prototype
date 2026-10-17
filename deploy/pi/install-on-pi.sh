@@ -209,7 +209,7 @@ else
   FC_BAUD="${VAJRON_FC_BAUD:-57600}"
   echo "    flight controller: ${FC_DEVICE} @ ${FC_BAUD}"
 
-  sudo mkdir -p "$CONF_DIR"
+  sudo mkdir -p "$CONF_DIR" /var/log/vajron-flights
   sed -e "s|VAJRON_FC_DEVICE|${FC_DEVICE}|" -e "s|VAJRON_FC_BAUD|${FC_BAUD}|" \
     "${SCRIPT_DIR}/mavlink-router.conf" | sudo tee "${CONF_DIR}/mavlink-router.conf" > /dev/null
   sed "s|VAJRON_ROUTER_BIN|${ROUTER_BIN}|" "${SCRIPT_DIR}/vajron-router.service" \

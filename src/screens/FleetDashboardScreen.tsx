@@ -7,12 +7,20 @@ import DroneStatusCard from '../components/DroneStatusCard';
 import CircularScore from '../components/CircularScore';
 import { mockDrones } from '../data/mockFleetData';
 import { useTelemetryStore } from '../data/useTelemetryStore';
+import { useLinkStore } from '../data/linkStore';
 import { DroneAsset } from '../data/types';
 import type { DroneCardTelemetry } from '../components/DroneStatusCard';
 
 export default function FleetDashboardScreen({ navigation }: any) {
   const { theme, tokens, sp } = useTheme();
   const headerColors = useHeaderColors();
+  // With a real or simulated link, only the linked aircraft has readings; the
+  // rest of the catalogue has no link, and must not show seeded numbers as if
+  // they were reported. With nothing connected the whole list is sample data,
+  // and says so.
+  const mode = useLinkStore(s => s.mode);
+  const linked = useLinkStore(s => s.liveDroneId);
+  const sample = mode === 'demo';
 
   const handleDronePress = (drone: DroneAsset) => {
     if (drone.status === 'in-flight') {
@@ -54,6 +62,7 @@ export default function FleetDashboardScreen({ navigation }: any) {
     const cards: Record<string, DroneCardTelemetry> = {};
 
     const list: DroneAsset[] = mockDrones.map((drone, i) => {
+      if (!sample && drone.id !== linked) return { ...drone, status: 'offline' as const };
       const raw = parts[i];
       if (!raw) return drone;
 
@@ -70,7 +79,7 @@ export default function FleetDashboardScreen({ navigation }: any) {
     });
 
     return { drones: list, telemetryById: cards };
-  }, [fleetSnapshot]);
+  }, [fleetSnapshot, sample, linked]);
 
   const inFlightCount = drones.filter(d => d.status === 'in-flight').length;
   const idleCount = drones.filter(d => d.status === 'idle').length;
@@ -163,7 +172,12 @@ export default function FleetDashboardScreen({ navigation }: any) {
         </View>
 
         <View style={styles.rosterColumn}>
-          <Text style={{ fontFamily: typography.fonts.bold, fontSize: 18, letterSpacing: 1.6, textTransform: 'uppercase', color: theme.textSecondary, marginBottom: sp(16) }}>Fleet</Text>
+          <Text style={{ fontFamily: typography.fonts.bold, fontSize: 18, letterSpacing: 1.6, textTransform: 'uppercase', color: theme.textSecondary, marginBottom: sp(sample ? 8 : 16) }}>Fleet</Text>
+          {sample ? (
+            <Text style={{ fontFamily: typography.fonts.semiBold, fontSize: 13, color: theme.accentAmber, marginBottom: sp(14) }}>
+              Sample fleet for demonstration — no aircraft connected. Tap CONNECT in the left panel.
+            </Text>
+          ) : null}
           <ScrollView contentContainerStyle={{ paddingRight: tokens.gutter, paddingBottom: sp(32) }}>
             {drones.map(drone => (
               <DroneStatusCard

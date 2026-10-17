@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { FLIGHT_WAYPOINTS } from './flightWaypoints';
 
 /**
@@ -39,7 +40,9 @@ interface MissionStore {
   markUploaded: () => void;
 }
 
-export const useMissionStore = create<MissionStore>((set, get) => ({
+// Saved in this browser so a refresh, or the Pi rebooting, does not throw away
+// a mission someone spent ten minutes planning.
+export const useMissionStore = create<MissionStore>()(persist((set, get) => ({
   waypoints: FLIGHT_WAYPOINTS.map(w => ({ id: nextId(), lat: w.lat, lng: w.lng, alt: w.altitude })),
   selectedId: null,
   defaultAlt: 40,
@@ -65,6 +68,13 @@ export const useMissionStore = create<MissionStore>((set, get) => ({
   setDefaultAlt: alt => set({ defaultAlt: alt }),
   setSpeed: speed => set({ speed }),
   markUploaded: () => set({ uploadedKey: routeKey(get().waypoints) }),
+}), {
+  name: 'gcs.plan',
+  storage: createJSONStorage(() => localStorage),
+  // NOT uploadedKey. After a reload the aircraft may have rebooted or been
+  // given another mission from QGC, so "the aircraft holds this plan" has to
+  // be earned again by a fresh upload, never remembered.
+  partialize: s => ({ waypoints: s.waypoints, defaultAlt: s.defaultAlt, speed: s.speed }),
 }));
 
 /** Straight-line route length in metres. */

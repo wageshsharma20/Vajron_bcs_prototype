@@ -36,6 +36,7 @@ export default function MissionControlScreen({ route }: any) {
   const [isPaused, setIsPaused] = useState(false);
   const [takeOffDialogVisible, setTakeOffDialogVisible] = useState(false);
   const [rtlDialogVisible, setRtlDialogVisible] = useState(false);
+  const [landDialogVisible, setLandDialogVisible] = useState(false);
 
   // The flown track. A point is kept only when the aircraft has moved a few
   // metres: appending every 10 Hz frame with a 500-point cap kept just the last
@@ -120,6 +121,14 @@ export default function MissionControlScreen({ route }: any) {
       altitude: route.params?.altitude ?? 30,
       speed: route.params?.speed,
     });
+  };
+
+  // LAND: come down where it is, now. The emergency option when flying home
+  // would take too long or cross somewhere it should not.
+  const handleLandConfirm = async () => {
+    setLandDialogVisible(false);
+    const result = await runCommand('land');
+    if (result.ok) setIsPaused(false);
   };
 
   const handleRtlConfirm = async () => {
@@ -286,6 +295,14 @@ export default function MissionControlScreen({ route }: any) {
                 <DownloadCloud size={18} color="#FFFFFF" strokeWidth={1.4} />
                 <Text style={[styles.actionBtnText, { color: '#FFFFFF', marginLeft: 8 }]}>RTL</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, { paddingHorizontal: sp(20), paddingVertical: sp(12), borderWidth: tokens.rule.medium, borderColor: theme.accentRed, backgroundColor: theme.background }]}
+                onPress={() => setLandDialogVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Land now"
+              >
+                <Text style={[styles.actionBtnText, { color: theme.accentRed }]}>LAND NOW</Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -308,6 +325,16 @@ export default function MissionControlScreen({ route }: any) {
       >
         {notice ?? ''}
       </Snackbar>
+
+      <ConfirmActionDialog
+        visible={landDialogVisible}
+        title="Land now?"
+        message={`${droneId} will stop and descend where it is. Make sure the area directly below is clear.`}
+        confirmLabel="Land now"
+        destructive={true}
+        onConfirm={handleLandConfirm}
+        onCancel={() => setLandDialogVisible(false)}
+      />
 
       <ConfirmActionDialog
         visible={rtlDialogVisible}
