@@ -67,10 +67,11 @@ export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFee
         <View style={styles.liveRow}>
           {source === 'camera' && <View style={[styles.liveDot, { backgroundColor: theme.accentRed }]} />}
           <Text style={styles.overlayText}>
-            {source === 'camera' ? 'LIVE CAMERA' : source === 'recorded' ? 'SIMULATED CAMERA · RECORDED FOOTAGE' : 'CAMERA'}
+            {source === 'camera' ? 'LIVE CAMERA' : source === 'recorded' ? 'SIMULATED CAMERA' : 'CAMERA'}
           </Text>
         </View>
-        {telemetry && isArmed && source !== 'none' && (
+        {source === 'recorded' && <Text style={styles.overlayStats}>Recorded footage, not a live view</Text>}
+        {telemetry && isArmed && source === 'camera' && (
           <Text style={styles.overlayStats}>LINK SIGNAL {telemetry.signalStrength}%</Text>
         )}
         </View>
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   overlayStats: {
     color: '#CCC',
     fontFamily: typography.fonts.medium,
-    fontSize: 15,
+    fontSize: 12,
     marginTop: 2,
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 1, height: 1 },

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme, typography } from '../theme';
+import { useLinkStore } from '../data/linkStore';
 import { BRIDGE_URL, CAMERA_URL, COMMAND_TOKEN, SIM_ENABLED, loadConnection, saveConnection } from '../config';
 
 /**
@@ -13,7 +14,16 @@ import { BRIDGE_URL, CAMERA_URL, COMMAND_TOKEN, SIM_ENABLED, loadConnection, sav
 export default function ConnectionPanel({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { theme } = useTheme();
   const saved = loadConnection();
-  const [source, setSource] = useState<'sim' | 'bridge'>(SIM_ENABLED ? 'sim' : 'bridge');
+  // Start on what is actually connected: a real aircraft that has taken over
+  // from the simulator should not be shown with "Simulator" selected.
+  const mode = useLinkStore(s => s.mode);
+  const [source, setSource] = useState<'sim' | 'bridge'>(
+    mode === 'live' || mode === 'lost' ? 'bridge' : SIM_ENABLED ? 'sim' : 'bridge');
+  // The panel exists from page load, before any aircraft connects; re-read the
+  // link each time it opens rather than keeping the state from that moment.
+  useEffect(() => {
+    if (visible) setSource(mode === 'live' || mode === 'lost' ? 'bridge' : SIM_ENABLED ? 'sim' : 'bridge');
+  }, [visible]);
   const [url, setUrl] = useState(saved?.bridgeUrl ?? BRIDGE_URL);
   const [token, setToken] = useState(saved?.token ?? COMMAND_TOKEN ?? '');
   const [camera, setCamera] = useState(saved?.cameraUrl ?? CAMERA_URL ?? '');
@@ -25,6 +35,8 @@ export default function ConnectionPanel({ visible, onClose }: { visible: boolean
         onPress={() => setSource(key)}
         accessibilityRole="radio"
         accessibilityState={{ checked: on }}
+        accessibilityLabel={title}
+        aria-checked={on}
         style={[styles.option, { borderColor: on ? theme.brand : theme.hairline, backgroundColor: on ? theme.surface : theme.background }]}
       >
         <View style={[styles.radio, { borderColor: theme.brand }]}>

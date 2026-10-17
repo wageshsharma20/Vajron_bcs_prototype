@@ -77,8 +77,10 @@ try:
     t = threading.Thread(target=post, args=('rtl', cmd_out)); t.start()
     m = get('/mission'); t.join()
     checks.append(('full mission read despite every item being lost once', m.get('ok') and m.get('count') == 7))
-    checks.append(('only places kept as waypoints (5 of 7 items)', len(m.get('waypoints', [])) == 5))
-    checks.append(('coordinates decoded', abs(m['waypoints'][2]['lat'] - 28.6186) < 1e-6 if m.get('ok') else False))
+    # 7 items: ArduPilot home, take-off, 3 waypoints, a speed change, RTL.
+    # Only the 3 planned places are waypoints.
+    checks.append(('only planned places kept as waypoints (3 of 7 items)', len(m.get('waypoints', [])) == 3))
+    checks.append(('coordinates decoded', abs(m['waypoints'][0]['lat'] - 28.6186) < 1e-6 if m.get('ok') else False))
     checks.append(('command issued mid-download still got its ACK', cmd_out.get('r', {}).get('ok') is True))
 
     before = state['list_requests']; get('/mission')

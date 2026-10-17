@@ -496,7 +496,7 @@ class Commander:
             if (kind == '*' or msg.get_type() == kind) and (want is None or want(msg)):
                 return msg
 
-    def download_mission(self, timeout=15.0):
+    def download_mission(self, timeout=15.0, autopilot=None):
         """Read the mission stored on the aircraft (MAVLink mission protocol).
 
         Read-only by design. The single-writer rule: QGroundControl plans and
@@ -533,7 +533,14 @@ class Commander:
                 })
             # Close the transaction so the autopilot is not left waiting on us.
             self.conn.mav.mission_ack_send(ts, tc, mav.MAV_MISSION_ACCEPTED, mav.MAV_MISSION_TYPE_MISSION)
-        nav = [i for i in items if i['command'] in NAV_WAYPOINT_COMMANDS]
+        # The places an operator planned. Not ArduPilot's item 0 (it is home,
+        # overwritten by the autopilot) and not the take-off item (it sits on the
+        # launch point): listing those made a 20-waypoint plan read back as 22,
+        # with two extra markers stacked on the launch point.
+        nav = [i for i in items
+               if i['command'] in NAV_WAYPOINT_COMMANDS
+               and i['command'] != mav.MAV_CMD_NAV_TAKEOFF
+               and not (i['seq'] == 0 and autopilot == AUTOPILOT_ARDUPILOT)]
         print(f'[mission] downloaded {len(items)} items ({len(nav)} waypoints)')
         return {'ok': True, 'count': len(items), 'waypoints': nav, 'items': items,
                 'fetchedAt': time.time()}
@@ -814,7 +821,7 @@ def make_handler(link, rate_hz, commander, token, mission_only=False):
             stale = (cache is None or 'refresh' in self.path
                      or (total and total != cache.get('count')))
             if stale:
-                result = commander.download_mission()
+                result = commander.download_mission(autopilot=link.autopilot_of_target())
                 if not result.get('ok'):
                     return self._json(result, status=502)
                 mission_cache['data'] = result

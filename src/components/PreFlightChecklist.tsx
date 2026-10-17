@@ -54,12 +54,15 @@ export default function PreFlightChecklist({
     <View style={styles.container}>
       
       {part !== 'launch' && (
-      <View style={[styles.list, part === 'checks' ? null : { marginBottom: sp(20) }]}>
+      // Two columns when the checks have the strip to themselves: six rows
+      // stacked took most of an 800 px screen and squeezed the map above them.
+      <View style={[styles.list, part === 'checks' ? styles.twoCol : { marginBottom: sp(20) }]}>
         {checks.map(check => (
           <View
             key={check.id}
             style={[
               styles.checkRow,
+              part === 'checks' ? styles.halfRow : null,
               { borderBottomColor: theme.hairline, borderBottomWidth: tokens.rule.hair, paddingVertical: sp(14) },
             ]}
           >
@@ -105,6 +108,8 @@ const styles = StyleSheet.create({
   list: {
     marginBottom: 20,
   },
+  twoCol: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 0, columnGap: 24 },
+  halfRow: { width: '47%' },
   checkRow: {
     flexDirection: 'row',
     // Top-aligned, so a label that wraps to two lines keeps its status word on

@@ -26,6 +26,10 @@ MISSION = ([(16, 28.618939, 77.301383, 0), (22, 28.618939, 77.301383, 30)]
            + [(20, 0.0, 0.0, 0)])
 
 
+# Starts on the ground, disarmed, like a real aircraft before a mission.
+STATE = {'armed': False}
+
+
 def serve_commands():
     """Accept COMMAND_LONG and acknowledge it, the way an autopilot would."""
     try:
@@ -75,6 +79,10 @@ def serve_commands():
                     name = mavlink.enums['MAV_CMD'][m.command].name \
                         if m.command in mavlink.enums['MAV_CMD'] else str(m.command)
                     print(f'  [vehicle] got {name} -> ACCEPTED')
+                    if m.command in (22, 400) and (m.command == 22 or m.param1 == 1):
+                        STATE['armed'] = True     # TAKEOFF, or ARM
+                    elif m.command == 21 or (m.command == 400 and m.param1 == 0):
+                        STATE['armed'] = False    # LAND, or DISARM
                     mav.command_ack_send(m.command, mavlink.MAV_RESULT_ACCEPTED)
         except Exception:
             pass
@@ -100,7 +108,7 @@ while True:
     hdg = int((t * 6) % 360)
     batt = max(20, 92 - int(t / 4))
 
-    v2(0,  struct.pack('<IBBBBB', 3, 2, 3, 128 | 81, 4, 3))
+    v2(0,  struct.pack('<IBBBBB', 3, 2, 3, (128 | 81) if STATE['armed'] else 81, 4, 3))
     v2(33, struct.pack('<IiiiihhhH', int(t * 1000), int(lat * 1e7), int(lng * 1e7),
                        220000, int(alt * 1000), 0, 0, 0, hdg * 100))
     v2(1,  struct.pack('<IIIHHhHHHHHHb', 0, 0, 0, 250, int(22.1 * 1000), 500,

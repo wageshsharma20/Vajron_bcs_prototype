@@ -146,6 +146,15 @@ export default function MissionControlScreen({ route }: any) {
   // Every arrangement below is built from exactly these five, resized and
   // repositioned. Nothing is added or dropped between them.
 
+  // Swapping panels remounts the video element, and the player does not carry
+  // its playing state onto the new one -- it sat paused at 0:00 in the small
+  // panel. Resume it after each swap.
+  useEffect(() => {
+    if (!isArmed || isPaused) return;
+    const id = setTimeout(() => feedPlayer.play(), 60);
+    return () => clearTimeout(id);
+  }, [mapBig]);
+
   const aircraftMission = useAircraftMission(droneId);
   const missionWps = aircraftMission.status === 'ok' ? aircraftMission.waypoints : [];
   // MISSION_CURRENT counts mission items; the waypoints carry their item number,
