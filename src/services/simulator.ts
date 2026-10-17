@@ -16,18 +16,13 @@ import type { CommandResult } from './commandLink';
  * aircraft appears on a bridge, the real one takes over and this stops for
  * good (see mavlinkLink).
  *
- * Timing: the Live Ops map is a recording of the demo route that runs for
- * 124 s, so the simulated aircraft advances along the route in step with it
- * (about 110 s for the route, after the climb) -- the map, the waypoint
- * counter and the position then always agree. The speed readout shows a
- * realistic survey speed rather than the 20 m/s that implies; this is a
- * demonstration, and a screen that agrees with itself matters more here than
- * exact physics.
+ * It flies whatever mission is uploaded to it, waypoint by waypoint, at the
+ * chosen speed and each waypoint's altitude, on the real map -- so what the
+ * screens show is what it does.
  */
 
 export const SIM_DRONE_ID = 'DRONE-01';
 
-const ROUTE_SECONDS = 110;
 const CRUISE_ALT = 30;
 const CLIMB_RATE = 3; // m/s
 const DESCENT_RATE = 2; // m/s
@@ -54,38 +49,21 @@ function bearing(a: { lat: number; lng: number }, b: { lat: number; lng: number 
   return (deg(Math.atan2(y, x)) + 360) % 360;
 }
 
-// Cumulative distance along the route, so a fraction of the route maps to a
-// point on it by distance rather than by waypoint count.
-const ROUTE = FLIGHT_WAYPOINTS.map(w => ({ lat: w.lat, lng: w.lng, alt: w.altitude }));
-const CUM: number[] = ROUTE.reduce<number[]>((acc, p, i) => {
-  acc.push(i === 0 ? 0 : acc[i - 1] + distance(ROUTE[i - 1], p));
-  return acc;
-}, []);
-const ROUTE_LEN = CUM[CUM.length - 1];
-const HOME = { lat: ROUTE[0].lat, lng: ROUTE[0].lng };
-
-function pointAt(f: number) {
-  const target = Math.max(0, Math.min(1, f)) * ROUTE_LEN;
-  let i = 1;
-  while (i < CUM.length - 1 && CUM[i] < target) i++;
-  const seg = CUM[i] - CUM[i - 1] || 1;
-  const t = (target - CUM[i - 1]) / seg;
-  const a = ROUTE[i - 1];
-  const b = ROUTE[i];
-  return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t, next: i };
-}
+type Wp = { lat: number; lng: number; alt: number };
+const DEFAULT_ROUTE: Wp[] = FLIGHT_WAYPOINTS.map(w => ({ lat: w.lat, lng: w.lng, alt: w.altitude }));
 
 class Simulator {
   private timer: ReturnType<typeof setInterval> | null = null;
   private phase: Phase = 'ground';
-  private f = 0;
-  private pos = { ...HOME };
+  private route: Wp[] = DEFAULT_ROUTE;
+  private home = { lat: DEFAULT_ROUTE[0].lat, lng: DEFAULT_ROUTE[0].lng };
+  private pos = { ...this.home };
   private alt = 0;
   private heading = 90;
   private battery = 92;
   private signal = 92;
   private sats = 18;
-  private nextWp = 1;
+  private nextWp = 0;   // index into route of the current target
   private speed = 0;
   private lastTick = 0;
   private cruiseAlt = CRUISE_ALT;
@@ -120,9 +98,44 @@ class Simulator {
     this.timer = null;
   }
 
-  /** The mission the simulated aircraft "holds", in the bridge's /mission shape. */
+  /** The mission the simulated aircraft holds, in the bridge's /mission shape. */
   mission() {
-    return ROUTE.map((p, seq) => ({ seq, lat: p.lat, lng: p.lng, alt: p.alt }));
+    // Item numbers start at 1, as on an autopilot where item 0 is home, so
+    // MISSION_CURRENT maps onto these the same way for both.
+    return this.route.map((p, i) => ({ seq: i + 1, lat: p.lat, lng: p.lng, alt: p.alt }));
+  }
+
+  getHome() {
+    return { ...this.home };
+  }
+
+  /**
+   * Accept a new mission, as an autopilot would over the mission protocol.
+   * Refused while airborne: changing the route under a flying aircraft is a
+   * decision for a real operator, not something a demo should model casually.
+   */
+  uploadMission(wps: Wp[]): Promise<CommandResult> {
+    return new Promise(resolve => setTimeout(() => {
+      if (this.phase !== 'ground') {
+        resolve({ ok: false, result: 'MAV_MISSION_DENIED', error: 'Land before uploading a new mission.' });
+        return;
+      }
+      if (wps.length === 0) {
+        resolve({ ok: false, result: 'MAV_MISSION_INVALID', error: 'The mission has no waypoints.' });
+        return;
+      }
+      this.route = wps.map(w => ({ ...w }));
+      // A simulated aircraft can stand anywhere: if the new mission is far
+      // from where it is, place it at the mission's start, as if it had been
+      // carried there before the flight.
+      if (distance(this.pos, wps[0]) > 3000) {
+        this.home = { lat: wps[0].lat, lng: wps[0].lng };
+        this.pos = { ...this.home };
+      }
+      this.nextWp = 0;
+      this.publish();
+      resolve({ ok: true, result: 'MAV_MISSION_ACCEPTED' });
+    }, 600));
   }
 
   /** Commands answer after a short delay, the way a radio round trip does. */
@@ -139,8 +152,7 @@ class Simulator {
       case 'takeoff':
         if (airborne) return denied('The simulated aircraft is already flying.');
         this.phase = 'mission';
-        this.f = 0;
-        this.nextWp = 1;
+        this.nextWp = 0;
         // The mission details chosen on the Plan screen, kept within limits a
         // survey drone would actually fly at.
         this.cruiseAlt = Math.max(10, Math.min(120, payload.altitude ?? CRUISE_ALT));
@@ -171,34 +183,49 @@ class Simulator {
   private tick(dt: number) {
     switch (this.phase) {
       case 'mission': {
-        this.alt = Math.min(this.cruiseAlt, this.alt + CLIMB_RATE * dt);
-        this.f += dt / ROUTE_SECONDS;
-        if (this.f >= 1) {
-          // A finished mission returns home, as a real autopilot would.
-          this.f = 1;
-          this.phase = 'rtl';
+        // Climb at the launch point first, as NAV_TAKEOFF does; then fly each
+        // waypoint in turn at the cruise speed, adjusting to its altitude.
+        if (this.alt < Math.min(this.cruiseAlt, 10) - 0.1 && this.nextWp === 0) {
+          this.alt = Math.min(this.cruiseAlt, this.alt + CLIMB_RATE * dt);
+          this.speed = 0;
+          break;
         }
-        const p = pointAt(this.f);
-        if (distance(this.pos, p) > 0.5) this.heading = bearing(this.pos, p);
-        this.pos = { lat: p.lat, lng: p.lng };
-        this.nextWp = p.next;
-        this.speed = this.cruiseSpeed + Math.sin(Date.now() / 4000) * 0.4;
+        const target = this.route[this.nextWp];
+        const d = distance(this.pos, target);
+        const step = this.cruiseSpeed * dt;
+        if (d <= step) {
+          this.pos = { lat: target.lat, lng: target.lng };
+          this.nextWp++;
+          if (this.nextWp >= this.route.length) {
+            // A finished mission returns home, as a real autopilot would.
+            this.nextWp = this.route.length - 1;
+            this.phase = 'rtl';
+          }
+        } else {
+          this.heading = bearing(this.pos, target);
+          const k = step / d;
+          this.pos = { lat: this.pos.lat + (target.lat - this.pos.lat) * k, lng: this.pos.lng + (target.lng - this.pos.lng) * k };
+        }
+        const wantAlt = target.alt || this.cruiseAlt;
+        const dz = wantAlt - this.alt;
+        this.alt += Math.sign(dz) * Math.min(Math.abs(dz), CLIMB_RATE * dt);
+        this.speed = this.cruiseSpeed + Math.sin(Date.now() / 4000) * 0.3;
         break;
       }
       case 'hold':
         this.speed = 0;
         break;
       case 'rtl': {
-        const d = distance(this.pos, HOME);
+        const d = distance(this.pos, this.home);
         if (d < RTL_SPEED * dt) {
-          this.pos = { ...HOME };
+          this.pos = { ...this.home };
           this.phase = 'land';
         } else {
-          this.heading = bearing(this.pos, HOME);
+          this.heading = bearing(this.pos, this.home);
           const step = (RTL_SPEED * dt) / d;
           this.pos = {
-            lat: this.pos.lat + (HOME.lat - this.pos.lat) * step,
-            lng: this.pos.lng + (HOME.lng - this.pos.lng) * step,
+            lat: this.pos.lat + (this.home.lat - this.pos.lat) * step,
+            lng: this.pos.lng + (this.home.lng - this.pos.lng) * step,
           };
         }
         this.speed = RTL_SPEED;
@@ -209,8 +236,7 @@ class Simulator {
         this.alt = Math.max(0, this.alt - DESCENT_RATE * dt);
         if (this.alt === 0) {
           this.phase = 'ground';
-          this.f = 0;
-          this.nextWp = 1;
+          this.nextWp = 0;
         }
         break;
       default:
@@ -250,9 +276,10 @@ class Simulator {
       gpsSatsVisible: this.sats,
       flightMode,
       isArmed: this.phase !== 'ground',
-      distanceToHome: Math.round(distance(this.pos, HOME)),
-      missionSeq: this.phase === 'ground' ? 0 : this.nextWp,
-      missionTotal: ROUTE.length,
+      distanceToHome: Math.round(distance(this.pos, this.home)),
+      // 1-based like MISSION_CURRENT on a real autopilot: the item being flown to.
+      missionSeq: this.phase === 'ground' ? 0 : this.nextWp + 1,
+      missionTotal: this.route.length,
     });
   }
 }

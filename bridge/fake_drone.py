@@ -46,13 +46,26 @@ def serve_commands():
 
     out = Out()
     mav = mavlink.MAVLink(out, srcSystem=1, srcComponent=1)
+    upload = {'n': 0, 'items': []}
     print(f'  commands  <- udp://0.0.0.0:{CMD_PORT}')
     while True:
         data, addr = sock.recvfrom(2048)
         out.peer = addr
         try:
             for m in mav.parse_buffer(data) or []:
-                if m.get_type() == 'MISSION_REQUEST_LIST':
+                # Upload: the aircraft drives it, requesting each item in turn.
+                if m.get_type() == 'MISSION_COUNT':
+                    upload['n'] = m.count; upload['items'] = []
+                    mav.mission_request_int_send(m.get_srcSystem(), m.get_srcComponent(), 0, 0)
+                elif m.get_type() == 'MISSION_ITEM_INT' and upload.get('n'):
+                    upload['items'].append((m.command, m.x / 1e7, m.y / 1e7, m.z))
+                    if len(upload['items']) < upload['n']:
+                        mav.mission_request_int_send(m.get_srcSystem(), m.get_srcComponent(), len(upload['items']), 0)
+                    else:
+                        MISSION[:] = upload['items']; upload['n'] = 0
+                        print(f'  [vehicle] new mission stored: {len(MISSION)} items')
+                        mav.mission_ack_send(m.get_srcSystem(), m.get_srcComponent(), 0, 0)
+                elif m.get_type() == 'MISSION_REQUEST_LIST':
                     mav.mission_count_send(m.get_srcSystem(), m.get_srcComponent(), len(MISSION), 0)
                 elif m.get_type() == 'MISSION_REQUEST_INT' and m.seq < len(MISSION):
                     cmd, lat, lng, alt = MISSION[m.seq]

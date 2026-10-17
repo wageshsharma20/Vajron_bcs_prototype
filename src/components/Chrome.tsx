@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ViewStyle, Image, TouchableOpacity } from 'react-native';
+import ConnectionPanel from './ConnectionPanel';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, typography } from '../theme';
 import { STATUS_RAMPS } from '../theme';
@@ -79,8 +80,15 @@ export function LinkBadge({ droneId }: { droneId?: string } = {}) {
     ? { label: 'NOT CONNECTED', fg: STATUS_RAMPS.amber[0], bg: 'transparent' }
     : look[mode];
 
+  // Tapping the badge answers "what am I connected to?" and lets the operator
+  // change it -- the one place that question is always visible.
+  const [panel, setPanel] = useState(false);
+
   return (
-    <View
+    <>
+    <ConnectionPanel visible={panel} onClose={() => setPanel(false)} />
+    <TouchableOpacity
+      onPress={() => setPanel(true)}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -90,8 +98,8 @@ export function LinkBadge({ droneId }: { droneId?: string } = {}) {
         paddingVertical: bg === 'transparent' ? 0 : 4,
         marginBottom: sp(10),
       }}
-      accessibilityRole="text"
-      accessibilityLabel={`Telemetry source: ${label}`}
+      accessibilityRole="button"
+      accessibilityLabel={`Telemetry source: ${label}. Change connection`}
     >
       <View
         style={{
@@ -105,7 +113,11 @@ export function LinkBadge({ droneId }: { droneId?: string } = {}) {
       <Text style={{ fontFamily: typography.fonts.bold, fontSize: 10, letterSpacing: 1.4, color: fg }}>
         {label}
       </Text>
-    </View>
+      <Text style={{ fontFamily: typography.fonts.bold, fontSize: 10, letterSpacing: 1.4, color: theme.onBrandMuted, marginLeft: 8 }}>
+        {'\u203A'} CONNECT
+      </Text>
+    </TouchableOpacity>
+    </>
   );
 }
 

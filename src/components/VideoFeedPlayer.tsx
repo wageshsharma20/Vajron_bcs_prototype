@@ -5,6 +5,9 @@ import { useTheme } from '../theme';
 import { TelemetryFrame } from '../data/types';
 import { typography } from '../theme';
 import { useFittedFrame } from '../hooks/useFittedFrame';
+import { useLinkStore } from '../data/linkStore';
+import { CAMERA_URL } from '../config';
+import LiveCamera from './LiveCamera';
 
 /** The camera source is 832x384; framing to it shows the whole picture without
  * either letterboxing the box or cropping the sides away to fill it. */
@@ -22,22 +25,38 @@ export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFee
   // Measured to the slot rather than declared at 100% width, so a short slot
   // shrinks the frame instead of clipping the picture inside it.
   const { ref: frameSlot, onLayout, style: frameSize } = useFittedFrame(FEED_ASPECT);
+  const mode = useLinkStore(s => s.mode);
+  // Three honest cases. Recorded footage is only ever shown for the simulator
+  // or the demo, and is labelled as such: on a real aircraft it would look
+  // exactly like what the drone sees, and it is not.
+  const source: 'camera' | 'recorded' | 'none' =
+    CAMERA_URL ? 'camera' : mode === 'sim' || mode === 'demo' ? 'recorded' : 'none';
 
   return (
     <View ref={frameSlot} style={styles.container} onLayout={onLayout}>
       <View style={[styles.frame, frameSize, { backgroundColor: theme.brandDeep }]}>
-      <VideoView
-        player={player}
-        style={styles.video}
-        contentFit="cover"
-        nativeControls={false}
-        playsInline
-        fullscreenOptions={{ enable: false }}
-      />
+      {source === 'camera' ? <LiveCamera url={CAMERA_URL!} /> : null}
+      {source === 'recorded' ? (
+        <VideoView
+          player={player}
+          style={styles.video}
+          contentFit="cover"
+          nativeControls={false}
+          playsInline
+          fullscreenOptions={{ enable: false }}
+        />
+      ) : null}
+      {source === 'none' ? (
+        <View style={[styles.standbyVeil, { backgroundColor: theme.brandDeep }]}>
+          <Text style={styles.standbyText}>NO CAMERA STREAM</Text>
+          <Text style={[styles.standbySub, { color: theme.onBrandMuted }]}>Add the camera’s stream address in CONNECT</Text>
+        </View>
+      ) : null}
 
       {/* Dims the held first frame so a standing aircraft does not read as a
-          live downlink. */}
-      {!isArmed && (
+          live downlink. Not over a real camera: that picture is worth seeing
+          before take-off too. */}
+      {!isArmed && source === 'recorded' && (
         <View style={[styles.standbyVeil, { backgroundColor: theme.overlayHeavy }]}>
           <Text style={styles.standbyText}>FEED STANDBY</Text>
           <Text style={[styles.standbySub, { color: theme.onBrandMuted }]}>Awaiting take-off</Text>
@@ -46,13 +65,13 @@ export default function VideoFeedPlayer({ telemetry, player, isArmed }: VideoFee
 
       <View style={styles.overlay}>
         <View style={styles.liveRow}>
-          {isArmed && <View style={[styles.liveDot, { backgroundColor: theme.accentRed }]} />}
-          <Text style={styles.overlayText}>{isArmed ? 'LIVE STREAM' : 'STREAM IDLE'}</Text>
-        </View>
-        {telemetry && isArmed && (
-          <Text style={styles.overlayStats}>
-            HLS · 1080p · 152ms · HM30 SIG: {telemetry.signalStrength}%
+          {source === 'camera' && <View style={[styles.liveDot, { backgroundColor: theme.accentRed }]} />}
+          <Text style={styles.overlayText}>
+            {source === 'camera' ? 'LIVE CAMERA' : source === 'recorded' ? 'SIMULATED CAMERA · RECORDED FOOTAGE' : 'CAMERA'}
           </Text>
+        </View>
+        {telemetry && isArmed && source !== 'none' && (
+          <Text style={styles.overlayStats}>LINK SIGNAL {telemetry.signalStrength}%</Text>
         )}
         </View>
       </View>

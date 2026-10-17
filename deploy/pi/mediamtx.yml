@@ -1,0 +1,33 @@
+# MediaMTX for the Vajron GCS camera. Installed to /etc/vajron-gcs/mediamtx.yml.
+#
+# Browsers cannot play the RTSP stream a drone camera (e.g. SIYI ZR10) sends.
+# MediaMTX pulls it and re-serves it as WebRTC, which the GCS plays at
+#     http://localhost:8889/cam/whep        (on the Pi)
+#     https://<pi>:8443/camera/cam/whep     (remote laptops, through Caddy)
+# with well under a second of delay.
+
+logLevel: warn
+
+# Only WebRTC is served; everything else is off.
+rtsp: no
+rtmp: no
+hls: no
+srt: no
+api: no
+metrics: no
+pprof: no
+playback: no
+moq: no
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcAllowOrigins: ['*']
+# Media on one fixed UDP port, so a firewall rule is simple.
+webrtcLocalUDPAddress: :8189
+
+paths:
+  cam:
+    # Filled in by install-on-pi.sh from VAJRON_CAMERA_RTSP.
+    source: VAJRON_CAMERA_RTSP
+    # Only pull from the camera while someone is watching.
+    sourceOnDemand: yes

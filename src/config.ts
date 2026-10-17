@@ -12,6 +12,43 @@
  */
 const DEFAULT_BRIDGE = 'http://localhost:8082';
 
+/**
+ * The operator's connection choice, made in the Connect panel and remembered
+ * in this browser. Precedence: address-bar parameters, then this, then the
+ * defaults below.
+ */
+export type ConnectionChoice = { source: 'sim' | 'bridge'; bridgeUrl?: string; token?: string; cameraUrl?: string };
+const STORE_KEY = 'gcs.connection';
+
+export function loadConnection(): ConnectionChoice | null {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORE_KEY) : null;
+    return raw ? (JSON.parse(raw) as ConnectionChoice) : null;
+  } catch {
+    return null; // private window, blocked storage, corrupt value: use defaults
+  }
+}
+
+/** Saves the choice and reloads, so every part of the station starts on it. */
+export function saveConnection(choice: ConnectionChoice) {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(choice));
+  } catch {
+    // storage blocked: fall through to the reload with query parameters
+  }
+  const q = new URLSearchParams();
+  if (choice.source === 'sim') q.set('sim', '1');
+  else {
+    q.set('sim', '0');
+    if (choice.bridgeUrl) q.set('bridge', choice.bridgeUrl);
+    // Never the token: the address bar ends up in history, logs and
+    // screenshots. It is read back from storage on the reload.
+  }
+  window.location.search = q.toString();
+}
+
+const SAVED = loadConnection();
+
 function resolveBridgeUrl(): string {
   if (typeof window === 'undefined' || !window.location) return DEFAULT_BRIDGE;
   try {
@@ -20,6 +57,7 @@ function resolveBridgeUrl(): string {
   } catch {
     // A malformed query string must not stop the GCS from starting.
   }
+  if (SAVED?.source === 'bridge' && SAVED.bridgeUrl) return SAVED.bridgeUrl.replace(/\/+$/, '');
   // Served over HTTPS (Caddy on the Pi, port 8443): the bridge sits behind the
   // same origin at /bridge. It cannot be reached at http://...:8082 from here --
   // browsers block plain-HTTP requests from an HTTPS page as mixed content.
@@ -44,10 +82,12 @@ function resolveBridgeUrl(): string {
 function resolveToken(): string | null {
   if (typeof window === 'undefined' || !window.location) return null;
   try {
-    return new URLSearchParams(window.location.search).get('token');
+    const q = new URLSearchParams(window.location.search).get('token');
+    if (q) return q;
   } catch {
-    return null;
+    // ignore
   }
+  return SAVED?.source === 'bridge' && SAVED.token ? SAVED.token : null;
 }
 
 /**
@@ -70,11 +110,14 @@ function resolveSim(): { enabled: boolean; bridgeDisabled: boolean } {
     // ignore a malformed query string
   }
   const publicSite = window.location.hostname.endsWith('.vercel.app');
+  const savedBridge = SAVED?.source === 'bridge';
+  const savedSim = SAVED?.source === 'sim';
+  const enabled = flag === '1' || (flag !== '0' && (savedSim || (publicSite && !savedBridge)));
   return {
-    enabled: flag === '1' || (publicSite && flag !== '0'),
-    // The public site has no bridge: do not even try, or the console fills
-    // with failed requests. ?bridge=... still overrides.
-    bridgeDisabled: publicSite && !bridgeOverride,
+    enabled,
+    // The public site has no bridge of its own: only reach out when the
+    // operator has pointed it at one, or the console fills with failures.
+    bridgeDisabled: publicSite && !bridgeOverride && !savedBridge,
   };
 }
 
@@ -84,6 +127,23 @@ export const BRIDGE_DISABLED = SIM.bridgeDisabled;
 
 export const BRIDGE_URL = resolveBridgeUrl();
 export const COMMAND_TOKEN = resolveToken();
+
+/**
+ * The camera's WebRTC (WHEP) address, e.g. http://localhost:8889/cam/whep from
+ * MediaMTX. With none set, a real aircraft shows no picture rather than
+ * recorded footage that could be mistaken for its camera.
+ */
+function resolveCamera(): string | null {
+  if (typeof window === 'undefined' || !window.location) return null;
+  try {
+    const q = new URLSearchParams(window.location.search).get('camera');
+    if (q) return q;
+  } catch {
+    // ignore
+  }
+  return SAVED?.cameraUrl || null;
+}
+export const CAMERA_URL = resolveCamera();
 export const TELEMETRY_STREAM = `${BRIDGE_URL}/telemetry/stream`;
 
 /**
@@ -94,3 +154,21 @@ export const TELEMETRY_STREAM = `${BRIDGE_URL}/telemetry/stream`;
  * trusting the indicator and then ignores it when it matters.
  */
 export const LINK_TIMEOUT_MS = 3000;
+
+
+/**
+ * Satellite imagery for the maps.
+ *
+ * Esri World Imagery by default: high-resolution over Delhi and no key needed
+ * to evaluate. For a commercial launch the provider's terms apply (Esri needs
+ * an ArcGIS account for production use) -- swap the URL for a licensed
+ * provider (MapTiler, Mapbox, Esri with a key) here, in one place.
+ *
+ * The field Pi has no internet, so tiles may be unavailable there: the map
+ * keeps working (positions, route, aircraft) on a plain grid and says so.
+ */
+export const MAP_TILES = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+  maxZoom: 19,
+};

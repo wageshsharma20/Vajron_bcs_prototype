@@ -313,6 +313,62 @@ if (( ROUTER_OK )) && systemctl is-active --quiet vajron-mavlink.service; then
   fi
 fi
 
+# ----------------------------------------------------------------- camera
+# Optional. A drone camera (e.g. SIYI ZR10) sends RTSP, which no browser plays.
+# MediaMTX re-serves it as WebRTC for the GCS. Pass the camera's address:
+#     VAJRON_CAMERA_RTSP=rtsp://192.168.144.25:8554/main.264 ./install-on-pi.sh
+# Without it the GCS shows "NO CAMERA STREAM" on a real aircraft -- never
+# recorded footage that could be mistaken for the drone's view.
+KIOSK_URL="${URL}"
+if [[ -n "${VAJRON_CAMERA_RTSP:-}" ]]; then
+  echo "==> Installing the camera relay (MediaMTX)"
+  MTX_VER=v1.21.2
+  case "$(uname -m)" in
+    aarch64|arm64) MTX_ARCH=linux_arm64 ;;
+    armv7l)        MTX_ARCH=linux_armv7 ;;
+    x86_64)        MTX_ARCH=linux_amd64 ;;
+    *)             MTX_ARCH="" ;;
+  esac
+  MTX_OK=0
+  if [[ -n "$MTX_ARCH" ]] && ! command -v mediamtx > /dev/null; then
+    T="$(mktemp -d)"; F="mediamtx_${MTX_VER}_${MTX_ARCH}.tar.gz"
+    if curl -fsSL -o "$T/$F" "https://github.com/bluenviron/mediamtx/releases/download/${MTX_VER}/${F}" \
+       && curl -fsSL -o "$T/sums" "https://github.com/bluenviron/mediamtx/releases/download/${MTX_VER}/checksums.sha256"; then
+      want="$(grep "${F}\$" "$T/sums" | cut -d' ' -f1)"
+      have="$(sha256sum "$T/$F" | cut -d' ' -f1)"
+      if [[ -n "$want" && "$want" == "$have" ]]; then
+        tar -xzf "$T/$F" -C "$T" mediamtx && sudo install -m 755 "$T/mediamtx" /usr/local/bin/mediamtx
+      else
+        echo "    WARNING: MediaMTX download failed its checksum; not installed." >&2
+      fi
+    fi
+    rm -rf "$T"
+  fi
+  if command -v mediamtx > /dev/null || [[ -x /usr/local/bin/mediamtx ]]; then
+    sudo mkdir -p "$CONF_DIR"
+    sed "s|VAJRON_CAMERA_RTSP|${VAJRON_CAMERA_RTSP}|" "${SCRIPT_DIR}/mediamtx.yml" \
+      | sudo tee "${CONF_DIR}/mediamtx.yml" > /dev/null
+    sudo tee /etc/systemd/system/vajron-camera.service > /dev/null <<CAMUNIT
+[Unit]
+Description=Vajron GCS camera relay (RTSP -> WebRTC)
+After=network-online.target
+[Service]
+ExecStart=/usr/local/bin/mediamtx ${CONF_DIR}/mediamtx.yml
+Restart=always
+RestartSec=2
+[Install]
+WantedBy=multi-user.target
+CAMUNIT
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now vajron-camera.service
+    KIOSK_URL="${URL}/?camera=http://localhost:8889/cam/whep"
+    MTX_OK=1
+    echo "    camera relay running: ${VAJRON_CAMERA_RTSP} -> WebRTC"
+  else
+    echo "    WARNING: MediaMTX unavailable (no internet?); no camera picture." >&2
+  fi
+fi
+
 echo "==> Installing the file server (port ${PORT})"
 sed "s/vajron-gcs-user-placeholder/${RUN_USER}/" "${SCRIPT_DIR}/vajron-gcs.service" \
   | sudo tee /etc/systemd/system/vajron-gcs.service > /dev/null
@@ -394,7 +450,7 @@ PROFILE="\${HOME}/.config/chromium/Default/Preferences"
 
 CHROME_ARGS=(
   --kiosk
-  --app="${URL}"
+  --app="${KIOSK_URL}"
   --noerrdialogs
   --disable-infobars
   --disable-session-crashed-bubble

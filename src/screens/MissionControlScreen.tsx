@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../theme';
 import { Pause, Play, DownloadCloud, UploadCloud } from 'lucide-react-native';
@@ -9,7 +9,8 @@ import { telemetryService } from '../services/telemetryService';
 import { useTelemetryStore } from '../data/useTelemetryStore';
 import TelemetryHUD from '../components/TelemetryHUD';
 import VideoFeedPlayer, { FEED_ASPECT } from '../components/VideoFeedPlayer';
-import MissionMapView from '../components/MissionMapView';
+import GeoMap from '../components/GeoMap';
+import { useAircraftMission } from '../hooks/useAircraftMission';
 import { useMissionPlayback } from '../hooks/useMissionPlayback';
 import { FLIGHT_WAYPOINTS, MAP_FRAME_ASPECT } from '../data/flightWaypoints';
 import { Page, useHeaderColors, Rule, VRule } from '../components/Chrome';
@@ -29,26 +30,34 @@ export default function MissionControlScreen({ route }: any) {
   const telemetry = useTelemetry(droneId);
   const updateGimbal = useTelemetryStore(state => state.updateGimbal);
 
-  const [flightPath, setFlightPath] = useState<{ latitude: number, longitude: number }[]>([]);
+  const [flightPath, setFlightPath] = useState<{ lat: number; lng: number }[]>([]);
+  // Map in the large panel and the video in the small one, or the reverse.
+  const [mapBig, setMapBig] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [takeOffDialogVisible, setTakeOffDialogVisible] = useState(false);
   const [rtlDialogVisible, setRtlDialogVisible] = useState(false);
 
+  // The flown track. A point is kept only when the aircraft has moved a few
+  // metres: appending every 10 Hz frame with a 500-point cap kept just the last
+  // 50 seconds of a flight. Started afresh at each take-off.
+  const wasArmedForTrack = useRef(false);
   useEffect(() => {
-    // Accumulate flight path for polyline
-    if (telemetry) {
-      setFlightPath(prev => {
-        const newPath = [...prev, { latitude: telemetry.lat, longitude: telemetry.lng }];
-        if (newPath.length > 500) newPath.shift(); // cap to prevent memory bloat
-        return newPath;
-      });
-    }
-  }, [telemetry]);
+    if (!telemetry) return;
+    if (telemetry.isArmed && !wasArmedForTrack.current) setFlightPath([]);
+    wasArmedForTrack.current = telemetry.isArmed;
+    if (!telemetry.isArmed) return;
+    setFlightPath(prev => {
+      const last = prev[prev.length - 1];
+      if (last && Math.abs(last.lat - telemetry.lat) < 2e-5 && Math.abs(last.lng - telemetry.lng) < 2e-5) return prev;
+      const next = [...prev, { lat: telemetry.lat, lng: telemetry.lng }];
+      return next.length > 5000 ? next.slice(next.length - 5000) : next;
+    });
+  }, [telemetry?.lat, telemetry?.lng, telemetry?.isArmed]);
 
   // The camera feed and the map recording are the same sortie, so one hook owns
   // both and keeps them aligned; take-off starts them and RTL rewinds them.
   const isArmed = !!telemetry?.isArmed;
-  const { feedPlayer, mapPlayer, progress: missionFraction } = useMissionPlayback(isArmed, isPaused);
+  const { feedPlayer, progress: missionFraction } = useMissionPlayback(isArmed, isPaused);
 
   // One progress figure for the whole screen, read off the recordings.
   //
@@ -137,8 +146,46 @@ export default function MissionControlScreen({ route }: any) {
   // Every arrangement below is built from exactly these five, resized and
   // repositioned. Nothing is added or dropped between them.
 
+  const aircraftMission = useAircraftMission(droneId);
+  const missionWps = aircraftMission.status === 'ok' ? aircraftMission.waypoints : [];
+  // MISSION_CURRENT counts mission items; the waypoints carry their item number,
+  // so the current target is the first waypoint at or after it.
+  const seq = telemetry?.missionSeq ?? 0;
+  const currentIndex = isArmed && seq > 0 ? missionWps.findIndex(w => (w as any).seq >= seq) : undefined;
+  const home = flightPath[0] ?? (telemetry && !isArmed ? { lat: telemetry.lat, lng: telemetry.lng } : null);
+
   const feed = <VideoFeedPlayer telemetry={telemetry} player={feedPlayer} isArmed={isArmed} />;
-  const map = <MissionMapView player={mapPlayer} isArmed={isArmed} progress={missionProgress} />;
+  const map = (
+    <GeoMap
+      waypoints={missionWps}
+      currentIndex={currentIndex !== undefined && currentIndex >= 0 ? currentIndex : undefined}
+      aircraft={telemetry ? { lat: telemetry.lat, lng: telemetry.lng, heading: telemetry.heading } : null}
+      home={home}
+      track={flightPath}
+      follow
+      fitKey={`${aircraftMission.status}:${missionWps.length}:${mapBig}`}
+      label={isArmed ? 'MAP · AIRCRAFT POSITION' : 'MAP'}
+    />
+  );
+  // One control swaps the two panels.
+  const swap = (
+    <TouchableOpacity
+      onPress={() => setMapBig(v => !v)}
+      accessibilityRole="button"
+      accessibilityLabel={mapBig ? 'Show video large' : 'Show map large'}
+      style={[styles.swapBtn, { backgroundColor: theme.overlayHeavy }]}
+    >
+      <Text style={styles.swapText}>{mapBig ? '⤢ VIDEO LARGE' : '⤢ MAP LARGE'}</Text>
+    </TouchableOpacity>
+  );
+  const big = (
+    <View style={{ flex: 1, position: 'relative' }}>{mapBig ? map : feed}{swap}</View>
+  );
+  const small = (
+    <View style={{ width: '100%', aspectRatio: 16 / 10, position: 'relative', overflow: 'hidden' }}>
+      {mapBig ? feed : map}
+    </View>
+  );
   const readings = (columns: number) => (
     <TelemetryHUD telemetry={telemetry} isGrid={true} columns={columns} />
   );
@@ -266,7 +313,7 @@ export default function MissionControlScreen({ route }: any) {
       {/* The feed takes the full width of the working area — the largest it can
           be without stacking — and everything else becomes three ruled columns
           under it, read left to right in the order the operator needs them. */}
-      <View style={{ padding: g, flexShrink: 1 }}>{ratioBox(FEED_ASPECT, feed)}</View>
+      <View style={{ padding: g, flexShrink: 1 }}>{ratioBox(FEED_ASPECT, big)}</View>
 
       {/* A thick rule divides what the aircraft is seeing from what it is
           reporting. It is the strongest line on the screen because that is the
@@ -308,7 +355,7 @@ export default function MissionControlScreen({ route }: any) {
             padding is spent on the gap before the rule, and the map's share of
             the row grows while the readings column gives up exactly that much,
             camera controls untouched. */}
-        <View style={{ flex: 1.45, paddingRight: 14, justifyContent: 'center' }}>{map}</View>
+        <View style={{ flex: 1.45, paddingRight: 14, justifyContent: 'center' }}>{small}</View>
         <VRule />
         <View style={{ flex: 1.4, paddingHorizontal: g, justifyContent: 'center', alignSelf: 'center' }}>
           {readings(3)}
@@ -328,6 +375,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
+  swapBtn: { position: 'absolute', right: 8, top: 8, paddingHorizontal: 10, paddingVertical: 6, zIndex: 900 },
+  swapText: { color: '#FFFFFF', fontFamily: typography.fonts.bold, fontSize: 11, letterSpacing: 0.8 },
   droneStatus: {
     fontFamily: typography.fonts.semiBold,
     fontSize: 11,

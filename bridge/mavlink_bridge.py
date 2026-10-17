@@ -371,6 +371,11 @@ class Link:
                 # A malformed frame must never take the bridge down mid-flight.
                 pass
 
+    def autopilot_of_target(self):
+        with self.lock:
+            v = self.vehicles.get(self.target_system)
+            return v.autopilot if v else AUTOPILOT_ARDUPILOT
+
     def mission_total(self):
         with self.lock:
             v = self.vehicles.get(self.target_system)
@@ -473,7 +478,8 @@ class Commander:
             if kind == 'COMMAND_ACK':
                 with self.lock:
                     self.acks[msg.command] = (msg.result, time.monotonic())
-            elif kind in ('MISSION_COUNT', 'MISSION_ITEM_INT'):
+            elif kind in ('MISSION_COUNT', 'MISSION_ITEM_INT', 'MISSION_REQUEST_INT',
+                          'MISSION_REQUEST', 'MISSION_ACK'):
                 self.mission_q.put(msg)
 
     def _next(self, kind, timeout, want=None):
@@ -487,7 +493,7 @@ class Commander:
                 msg = self.mission_q.get(timeout=left)
             except queue.Empty:
                 return None
-            if msg.get_type() == kind and (want is None or want(msg)):
+            if (kind == '*' or msg.get_type() == kind) and (want is None or want(msg)):
                 return msg
 
     def download_mission(self, timeout=15.0):
@@ -531,6 +537,62 @@ class Commander:
         print(f'[mission] downloaded {len(items)} items ({len(nav)} waypoints)')
         return {'ok': True, 'count': len(items), 'waypoints': nav, 'items': items,
                 'fetchedAt': time.time()}
+
+    def upload_mission(self, waypoints, autopilot):
+        """Write a mission to the aircraft (MAVLink mission protocol, upload).
+
+        The aircraft drives the transfer: we announce the count, it requests
+        each item by sequence number, we answer each request, and it closes
+        with a MISSION_ACK carrying its verdict. That verdict is what we report.
+
+        Item 0 differs by autopilot. ArduPilot reserves it for home and
+        overwrites it, so a placeholder goes there; PX4 does not, and a
+        placeholder would become a real waypoint at the launch point.
+        """
+        mav = mavutil.mavlink
+        ts, tc = self.target
+        rel = mav.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        first = waypoints[0]
+        items = []
+        if autopilot == AUTOPILOT_ARDUPILOT:
+            items.append((mav.MAV_CMD_NAV_WAYPOINT, rel, first['lat'], first['lng'], 0))
+        items.append((mav.MAV_CMD_NAV_TAKEOFF, rel, first['lat'], first['lng'], float(first['alt'])))
+        for w in waypoints:
+            items.append((mav.MAV_CMD_NAV_WAYPOINT, rel, w['lat'], w['lng'], float(w['alt'])))
+        items.append((mav.MAV_CMD_NAV_RETURN_TO_LAUNCH, rel, 0, 0, 0))
+
+        with self.send_lock:
+            while not self.mission_q.empty():
+                self.mission_q.get_nowait()
+            served = set()
+            for _attempt in range(3):
+                self.conn.mav.mission_count_send(ts, tc, len(items), mav.MAV_MISSION_TYPE_MISSION)
+                deadline = time.monotonic() + 10.0
+                while time.monotonic() < deadline:
+                    msg = self._next('*', 3.0)
+                    if msg is None:
+                        break                      # silence: re-announce the count
+                    kind = msg.get_type()
+                    if kind in ('MISSION_REQUEST_INT', 'MISSION_REQUEST'):
+                        seq = msg.seq
+                        if not 0 <= seq < len(items):
+                            continue
+                        cmd, frame, lat, lng, alt = items[seq]
+                        self.conn.mav.mission_item_int_send(
+                            ts, tc, seq, frame, cmd, 0, 1, 0, 0, 0, 0,
+                            int(lat * 1e7), int(lng * 1e7), alt, mav.MAV_MISSION_TYPE_MISSION)
+                        served.add(seq)
+                        deadline = time.monotonic() + 10.0
+                    elif kind == 'MISSION_ACK':
+                        ok = msg.type == mav.MAV_MISSION_ACCEPTED
+                        label = mav.enums['MAV_MISSION_RESULT'][msg.type].name \
+                            if msg.type in mav.enums['MAV_MISSION_RESULT'] else str(msg.type)
+                        print(f'[mission] upload of {len(items)} items -> {label}')
+                        return {'ok': ok, 'result': label, 'count': len(items)} if ok else \
+                               {'ok': False, 'result': label, 'error': f'the aircraft rejected the mission ({label})'}
+                if served:
+                    break                          # it started but went quiet mid-transfer
+        return {'ok': False, 'error': f'mission upload did not complete ({len(served)} of {len(items)} items requested)'}
 
     def available(self, name):
         if name in self.SAFE:
@@ -637,6 +699,12 @@ def make_handler(link, rate_hz, commander, token, mission_only=False):
             # gate: a request carrying it can no longer be a 'simple' CORS
             # request that skips OPTIONS entirely.
             self.send_header('Access-Control-Allow-Headers', 'content-type, x-vajron-token')
+            # Chrome asks before a public website (the hosted GCS) may reach a
+            # server on the operator's own machine or network. Opting in here is
+            # what lets dda-ground-control-station.vercel.app connect to this
+            # bridge; the command token is still what authorises commands.
+            if self.headers.get('Access-Control-Request-Private-Network'):
+                self.send_header('Access-Control-Allow-Private-Network', 'true')
             self.end_headers()
 
         def do_GET(self):
@@ -670,7 +738,7 @@ def make_handler(link, rate_hz, commander, token, mission_only=False):
             self.wfile.write(body)
 
         def do_POST(self):
-            if not self.path.startswith('/command'):
+            if not (self.path.startswith('/command') or self.path.startswith('/mission')):
                 return self._json({'ok': False, 'error': 'not found'})
             if commander is not None and mission_only:
                 return self._json({
@@ -704,9 +772,35 @@ def make_handler(link, rate_hz, commander, token, mission_only=False):
                 return self._json({'ok': False, 'error': f'this bridge commands {link.drone_id}, not {want}'},
                                   status=409)
 
+            if self.path.startswith('/mission'):
+                return self._upload(body)
+
             name = str(body.get('command', '')).lower()
             alt = body.get('altitude')
             result = commander.send(name, alt)
+            return self._json(result, status=200 if result.get('ok') else 409)
+
+        def _upload(self, body):
+            wps = body.get('waypoints') or []
+            try:
+                wps = [{'lat': float(w['lat']), 'lng': float(w['lng']), 'alt': float(w['alt'])} for w in wps]
+            except (KeyError, TypeError, ValueError):
+                return self._json({'ok': False, 'error': 'malformed waypoints'}, status=400)
+            if not wps:
+                return self._json({'ok': False, 'error': 'the mission has no waypoints'}, status=400)
+            if len(wps) > 700:
+                return self._json({'ok': False, 'error': 'too many waypoints'}, status=400)
+            snap = link.state()
+            v = snap['vehicles'][0] if snap['connected'] else None
+            if v is None:
+                return self._json({'ok': False, 'error': 'no aircraft connected'}, status=409)
+            # Not under a flying aircraft: swapping the route mid-flight changes
+            # where it goes next without the pilot choosing that moment.
+            if v.get('isArmed'):
+                return self._json({'ok': False, 'error': 'land and disarm before uploading a new mission'}, status=409)
+            result = commander.upload_mission(wps, link.autopilot_of_target())
+            if result.get('ok'):
+                mission_cache.pop('data', None)    # what the aircraft holds just changed
             return self._json(result, status=200 if result.get('ok') else 409)
 
         def _mission(self):

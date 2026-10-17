@@ -246,11 +246,12 @@ against the internal root, an untrusting client is refused, and Server-Sent
 Events pass through unbuffered (about 30 events in 3 s at 10 Hz).
 
 
-## Mission sync: QGC writes, the DDA GCS reads
+## Mission sync: one station writes
 
-One rule: **QGroundControl plans and uploads missions; the DDA GCS only reads
-back what the aircraft actually holds.** Two stations both writing missions is
-how an aircraft ends up flying a plan neither operator is looking at.
+One rule: **only one station uploads missions.** Two stations both writing
+missions is how an aircraft ends up flying a plan neither operator is looking
+at. The DDA GCS can now plan and upload (below); if it does, QGroundControl
+should only read. If QGC plans, the DDA GCS reads back what the aircraft holds.
 
 - `MISSION_CURRENT` (decoded with the standard library) gives the current
   mission item and, on recent autopilots, the mission length. Live Ops' progress
@@ -271,3 +272,45 @@ each silently eat the other's messages.
 `test_mission.py`: every item lost once and retried, a command issued in the
 middle of a download, caching, and re-reading after the plan changes.
 `fake_drone.py` now carries a 9-item mission for testing the screens.
+
+
+## Uploading missions from the GCS
+
+`POST /mission` with `{"waypoints": [{"lat", "lng", "alt"}, ...]}` writes the
+mission with the MAVLink mission protocol. The aircraft drives the transfer
+(it requests each item) and closes it with `MISSION_ACK`; that verdict is what
+is returned. The bridge adds a take-off item before the waypoints and
+RETURN_TO_LAUNCH after them, and a home placeholder as item 0 on ArduPilot
+only (ArduPilot reserves item 0 for home; on PX4 it would become a real
+waypoint). Refused while the aircraft is armed. Needs commanding enabled (not
+`--mission-only`) and the command token if one is set. `test_upload.py`.
+
+## Connecting the hosted website to a drone
+
+The website (e.g. dda-ground-control-station.vercel.app) is static; it reaches
+an aircraft through this bridge on the operator's computer or Pi. In the
+website: tap the badge at the bottom of the left panel -> CONNECT ->
+"Drone (via the Vajron bridge)".
+
+- Bridge on the same computer: `http://localhost:8082`. Browsers allow an HTTPS
+  site to reach localhost; Chrome may ask to allow access to devices on the
+  local network -- allow it. The bridge answers Chrome's private-network
+  preflight (`Access-Control-Allow-Private-Network`).
+- Bridge on a Pi: `https://<pi>:8443/bridge` (through Caddy). Plain
+  `http://<pi-ip>:8082` will NOT work from an HTTPS site: browsers block it as
+  mixed content.
+
+A browser cannot open a radio or USB port by itself, which is why the bridge
+exists. (Chrome's WebSerial could talk to a USB radio directly in future, at
+the cost of a MAVLink stack in the browser.)
+
+## Camera
+
+Drone cameras such as the SIYI ZR10 send RTSP, which browsers cannot play.
+MediaMTX re-serves it as WebRTC (`deploy/pi/mediamtx.yml`); the GCS plays it
+from the CAMERA STREAM address in CONNECT, e.g.
+`http://localhost:8889/cam/whep` or `https://<pi>:8443/camera/cam/whep`.
+On the Pi: `VAJRON_CAMERA_RTSP=rtsp://... ./install-on-pi.sh`.
+
+With no camera stream set, a real aircraft shows "NO CAMERA STREAM". Recorded
+footage is only ever shown for the simulator and demo, and is labelled so.

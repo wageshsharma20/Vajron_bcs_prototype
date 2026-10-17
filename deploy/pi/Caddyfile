@@ -28,6 +28,12 @@ VAJRON_SITE_ADDRESSES {
 		}
 	}
 
+	# The camera's WebRTC signalling (WHEP), from MediaMTX. The video itself
+	# then flows over WebRTC's own encrypted (DTLS-SRTP) connection.
+	handle_path /camera/* {
+		reverse_proxy 127.0.0.1:8889
+	}
+
 	handle {
 		reverse_proxy 127.0.0.1:8080
 	}
